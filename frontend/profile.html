@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile & Security | WORLD MONITOR</title>
+  <meta name="description" content="Manage personal contact records, emergency next-of-kin info, department assignment, and access credentials.">
+
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="app-layout">
+
+  <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="/dashboard.html" class="brand-container">
+        <div class="brand-icon-box">
+          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-text-box">
+          <span class="brand-title">WORLD MONITOR</span>
+          <span class="brand-tagline">Real-time • Safe • Together</span>
+        </div>
+      </a>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">
+        <i data-lucide="panel-left-close"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Telemetry & Radar</div>
+      <a href="/dashboard.html" class="nav-link">
+        <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+      </a>
+      <a href="/radar.html" class="nav-link">
+        <i data-lucide="crosshair"></i> <span>Live Radar</span>
+      </a>
+      <a href="/nowcast.html" class="nav-link">
+        <i data-lucide="cloud-lightning"></i> <span>Nowcast</span>
+      </a>
+      <a href="/flood-map.html" class="nav-link">
+        <i data-lucide="waves"></i> <span>Flood Map</span>
+      </a>
+
+      <div class="nav-section-title">Emergency Response</div>
+      <a href="/alerts.html" class="nav-link">
+        <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+      </a>
+      <a href="/safe-routes.html" class="nav-link">
+        <i data-lucide="map-pin"></i> <span>Safe Routes</span>
+      </a>
+      <a href="/infrastructure.html" class="nav-link">
+        <i data-lucide="building-2"></i> <span>Infrastructure</span>
+      </a>
+      <a href="/citizen-reports.html" class="nav-link">
+        <i data-lucide="megaphone"></i> <span>Citizen Reports</span>
+      </a>
+
+      <div class="nav-section-title">Analytics & Sensors</div>
+      <a href="/reports.html" class="nav-link">
+        <i data-lucide="file-text"></i> <span>Reports</span>
+      </a>
+      <a href="/monitoring-stations.html" class="nav-link">
+        <i data-lucide="cpu"></i> <span>Monitoring Stations</span>
+      </a>
+      <a href="/weather-data.html" class="nav-link">
+        <i data-lucide="wind"></i> <span>Weather Data</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/settings.html" class="nav-link">
+        <i data-lucide="settings"></i> <span>Settings</span>
+      </a>
+      <a href="/profile.html" class="nav-link active">
+        <i data-lucide="user"></i> <span>Profile</span>
+      </a>
+      <a href="#" class="nav-link logout-link" id="logout-trigger-btn">
+        <i data-lucide="log-out"></i> <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Viewport -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open Menu">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <div class="location-selector-wrap">
+          <i data-lucide="map-pin"></i>
+          <select id="global-city-select" class="city-select">
+            <option value="Chhatrapati Sambhajinagar">Chhatrapati Sambhajinagar</option>
+            <option value="Pune">Pune</option>
+            <option value="Nashik">Nashik</option>
+            <option value="Nagpur">Nagpur</option>
+          </select>
+        </div>
+
+        <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">
+          --:--:-- IST
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-status-pill">
+          <span class="pulse-dot"></span> IDENTITY SECURED
+        </div>
+
+        <button class="notif-bell-btn" id="notif-bell-btn" title="Emergency Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
+        </button>
+
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-header">
+            <span style="font-family: var(--font-orbitron); font-size: 0.95rem; font-weight: 700; color: #FFF;">
+              Emergency Notifications
+            </span>
+            <button id="mark-all-read-btn" style="background: none; border: none; color: var(--cyan-bright); font-size: 0.78rem; cursor: pointer;">
+              Mark all as read
+            </button>
+          </div>
+          <div class="notif-list" id="notif-list"></div>
+        </div>
+
+        <a href="/profile.html" class="user-profile-pill">
+          <img src="/assets/avatars/officer.png" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'" class="user-avatar-img" id="topbar-avatar-img" alt="Avatar">
+          <div class="user-info-text">
+            <span class="user-name" id="topbar-user-name">Commander Admin</span>
+            <span class="user-role-tag" id="topbar-user-role">AUTHORITY</span>
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <!-- Profile Content Area (Section 24 Specification) -->
+    <main class="content-area">
+      <!-- User Overview Banner -->
+      <div class="hud-panel animate-fade-in" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <img src="/assets/avatars/officer.png" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80'" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--cyan-bright); object-fit: cover;" id="profile-avatar-large" alt="Profile Picture">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+              <h2 id="profile-fullname-heading" style="font-size: 1.4rem;">Commander Rajesh Deshmukh</h2>
+              <span class="badge badge-success" id="profile-role-badge">AUTHORITY</span>
+            </div>
+            <div style="color: var(--text-secondary); font-size: 0.92rem;" id="profile-dept-heading">
+              State Disaster Management Authority (SDMA) • Chief Emergency Response Officer
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;" id="profile-email-heading">
+              admin@worldmonitor.gov.in
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-danger" id="profile-logout-btn">
+          <i data-lucide="log-out"></i> Logout of Terminal
+        </button>
+      </div>
+
+      <!-- Forms Grid -->
+      <div class="dashboard-main-grid animate-slide-up">
+        <!-- Update Profile Form -->
+        <div class="hud-panel">
+          <div class="hud-panel-header">
+            <div class="hud-panel-title">
+              <i data-lucide="user-pen" style="color: var(--cyan-bright);"></i>
+              Update Contact Records
+            </div>
+          </div>
+
+          <form id="update-profile-form">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" id="prof-name" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Contact Mobile *</label>
+              <input type="tel" id="prof-phone" class="form-input" required>
+            </div>
+
+            <!-- Authority Only Fields -->
+            <div id="authority-fields-box" style="display: none;">
+              <div class="form-group">
+                <label class="form-label">Department / Agency</label>
+                <input type="text" id="prof-dept" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Official Designation</label>
+                <input type="text" id="prof-desig" class="form-input">
+              </div>
+            </div>
+
+            <!-- Citizen Only Fields -->
+            <div id="citizen-fields-box" style="display: none;">
+              <div class="form-group">
+                <label class="form-label">Emergency Next-of-Kin Contact</label>
+                <input type="tel" id="prof-emergency" class="form-input" placeholder="+91...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Residential Address</label>
+                <input type="text" id="prof-address" class="form-input" placeholder="Flat/House, Sector, Landmark">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">
+              <i data-lucide="check"></i> Update Profile Information
+            </button>
+          </form>
+        </div>
+
+        <!-- Change Password Form -->
+        <div class="hud-panel" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div class="hud-panel-header">
+              <div class="hud-panel-title">
+                <i data-lucide="lock" style="color: var(--cyan-bright);"></i>
+                Credential Security & Password
+              </div>
+            </div>
+
+            <form id="change-password-form">
+              <div class="form-group">
+                <label class="form-label">Current Password *</label>
+                <input type="password" id="pass-current" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">New Password *</label>
+                <input type="password" id="pass-new" class="form-input" minlength="6" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Confirm New Password *</label>
+                <input type="password" id="pass-confirm" class="form-input" minlength="6" required>
+              </div>
+
+              <button type="submit" class="btn btn-outline" style="width: 100%; padding: 12px; margin-top: 8px;">
+                <i data-lucide="shield-check"></i> Change Password
+              </button>
+            </form>
+          </div>
+
+          <div style="padding: 12px; background: rgba(0, 59, 102, 0.3); border-radius: var(--radius-sm); margin-top: 16px;">
+            <div style="font-family: var(--font-rajdhani); font-weight: 700; color: var(--green-neon); font-size: 0.88rem;">
+              ROLE-BASED AUTHORIZATION STATUS:
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+              Session validated with cryptographically signed JSON Web Token (JWT). All command actions are audited to compliance log.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <a href="/dashboard.html" class="mobile-bottom-item">
+      <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+    </a>
+    <a href="/radar.html" class="mobile-bottom-item">
+      <i data-lucide="crosshair"></i> <span>Radar</span>
+    </a>
+    <a href="/alerts.html" class="mobile-bottom-item">
+      <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+    </a>
+    <a href="/citizen-reports.html" class="mobile-bottom-item">
+      <i data-lucide="megaphone"></i> <span>Report</span>
+    </a>
+    <a href="/profile.html" class="mobile-bottom-item active">
+      <i data-lucide="user"></i> <span>Profile</span>
+    </a>
+  </nav>
+
+  <!-- Logout Modal -->
+  <div class="modal-overlay" id="logout-modal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; color: #FFF;">Confirm Session Termination</h3>
+        <button class="sidebar-toggle-btn" id="logout-cancel-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Are you sure you want to logout of the <b>WORLD MONITOR</b> command terminal?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('logout-modal').classList.remove('active')">
+          Cancel
+        </button>
+        <button class="btn btn-danger" id="logout-confirm-btn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Require auth
+      if (!Auth.requireAuth()) return;
+
+      const user = Auth.getUser();
+      const isAuthority = user && user.role === 'AUTHORITY';
+
+      // Populate UI
+      document.getElementById('profile-fullname-heading').textContent = user.full_name;
+      document.getElementById('profile-email-heading').textContent = user.email;
+      document.getElementById('prof-name').value = user.full_name;
+      document.getElementById('prof-phone').value = user.phone || '';
+
+      const roleBadge = document.getElementById('profile-role-badge');
+      if (roleBadge) {
+        roleBadge.textContent = user.role;
+        roleBadge.className = `badge ${isAuthority ? 'badge-success' : 'badge-cyan'}`;
+      }
+
+      const authBox = document.getElementById('authority-fields-box');
+      const citizenBox = document.getElementById('citizen-fields-box');
+      const deptHeading = document.getElementById('profile-dept-heading');
+
+      if (isAuthority) {
+        if (authBox) authBox.style.display = 'block';
+        if (user.authority) {
+          document.getElementById('prof-dept').value = user.authority.department || '';
+          document.getElementById('prof-desig').value = user.authority.designation || '';
+          deptHeading.textContent = `${user.authority.department} • ${user.authority.designation}`;
+        }
+      } else {
+        if (citizenBox) citizenBox.style.display = 'block';
+        if (user.citizen) {
+          document.getElementById('prof-emergency').value = user.citizen.emergency_contact || '';
+          document.getElementById('prof-address').value = user.citizen.address || '';
+          deptHeading.textContent = `Citizen Volunteer • Sector: ${user.citizen.city || 'Chhatrapati Sambhajinagar'}`;
+        }
+      }
+
+      // Profile Form submit
+      const profForm = document.getElementById('update-profile-form');
+      if (profForm) {
+        profForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          try {
+            const payload = {
+              full_name: document.getElementById('prof-name').value.trim(),
+              phone: document.getElementById('prof-phone').value.trim(),
+              department: isAuthority ? document.getElementById('prof-dept').value.trim() : undefined,
+              designation: isAuthority ? document.getElementById('prof-desig').value.trim() : undefined,
+              emergency_contact: !isAuthority ? document.getElementById('prof-emergency').value.trim() : undefined,
+              address: !isAuthority ? document.getElementById('prof-address').value.trim() : undefined
+            };
+
+            const res = await API.patch('/api/auth/profile', payload);
+            if (res && res.success) {
+              window.showToast('Profile information successfully saved!', 'success');
+              user.full_name = payload.full_name;
+              user.phone = payload.phone;
+              Auth.setUser(user);
+            }
+          } catch (err) {
+            window.showToast(err.message, 'danger');
+          }
+        });
+      }
+
+      // Password Form submit
+      const passForm = document.getElementById('change-password-form');
+      if (passForm) {
+        passForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const currentPassword = document.getElementById('pass-current').value;
+          const newPassword = document.getElementById('pass-new').value;
+          const confirmPassword = document.getElementById('pass-confirm').value;
+
+          if (newPassword !== confirmPassword) {
+            alert('New passwords do not match');
+            return;
+          }
+
+          try {
+            const res = await API.post('/api/auth/change-password', {
+              current_password: currentPassword,
+              new_password: newPassword
+            });
+            if (res && res.success) {
+              window.showToast('Security password changed successfully', 'success');
+              passForm.reset();
+            }
+          } catch (err) {
+            window.showToast(err.message, 'danger');
+          }
+        });
+      }
+
+      document.getElementById('profile-logout-btn').addEventListener('click', () => {
+        document.getElementById('logout-modal').classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

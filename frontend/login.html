@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | WORLD MONITOR Command Center</title>
+  <meta name="description" content="Sign in to World Monitor Command Center as a Citizen or Authority.">
+
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="auth-page-wrapper">
+
+  <div class="auth-card-panel animate-fade-in">
+    <div class="auth-header">
+      <a href="/index.html" class="auth-brand-logo">
+        <div class="brand-icon-box">
+          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
+        </div>
+        <span class="brand-title" style="font-size: 1.25rem;">WORLD MONITOR</span>
+      </a>
+      <h1 class="auth-title" id="login-heading">Citizen Sign In</h1>
+      <p class="auth-subtitle" id="login-subtext">Access real-time safety feeds and report local hazards</p>
+    </div>
+
+    <!-- Role Switcher Tabs -->
+    <div class="auth-role-tabs">
+      <button class="role-tab-btn active" id="tab-citizen" type="button">
+        <i data-lucide="user" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i> Citizen
+      </button>
+      <button class="role-tab-btn" id="tab-authority" type="button">
+        <i data-lucide="shield" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i> Authority
+      </button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label" for="login-identifier">Email / Mobile Number</label>
+        <input type="text" id="login-identifier" class="form-input" placeholder="e.g. citizen@worldmonitor.org or +91..." required>
+      </div>
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label class="form-label" for="login-password">Password</label>
+          <a href="#" id="forgot-password-link" style="font-size: 0.8rem; color: var(--cyan-vibrant);">Forgot Password?</a>
+        </div>
+        <input type="password" id="login-password" class="form-input" placeholder="••••••••••••" required>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); cursor: pointer;">
+          <input type="checkbox" id="remember-me" checked style="accent-color: var(--cyan-vibrant);"> Remember Me
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="login-submit-btn" style="width: 100%; padding: 12px;">
+        <i data-lucide="log-in"></i> Sign In to Portal
+      </button>
+
+      <button type="button" class="btn-google" id="google-login-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.1-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/></svg>
+        Continue with Google
+      </button>
+    </form>
+
+    <div class="auth-divider">Or</div>
+
+    <div class="auth-footer-links">
+      Don't have an account? <a href="/signup.html" id="link-create-account"><b>Create Account</b></a>
+    </div>
+
+    <!-- Quick Demo Credentials Box for Evaluation -->
+    <div class="demo-credentials-box">
+      <div style="font-weight: 700; color: var(--text-white); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+        <i data-lucide="key" style="width: 14px; height: 14px; color: var(--cyan-bright);"></i> Quick One-Click Credentials:
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 6px;">
+        <button type="button" class="btn btn-outline" id="fill-citizen" style="padding: 4px 8px; font-size: 0.75rem; flex: 1;">
+          Citizen Demo
+        </button>
+        <button type="button" class="btn btn-outline" id="fill-authority" style="padding: 4px 8px; font-size: 0.75rem; flex: 1; border-color: var(--green-neon); color: var(--green-neon);">
+          Authority Demo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+
+      const params = new URLSearchParams(window.location.search);
+      let currentRole = (params.get('role') || 'citizen').toUpperCase();
+
+      const tabCitizen = document.getElementById('tab-citizen');
+      const tabAuthority = document.getElementById('tab-authority');
+      const heading = document.getElementById('login-heading');
+      const subtext = document.getElementById('login-subtext');
+      const identifierInput = document.getElementById('login-identifier');
+      const passwordInput = document.getElementById('login-password');
+      const form = document.getElementById('login-form');
+
+      function setRole(role) {
+        currentRole = role;
+        if (role === 'AUTHORITY') {
+          tabAuthority.classList.add('active');
+          tabCitizen.classList.remove('active');
+          heading.textContent = 'Authority Command Sign In';
+          subtext.textContent = 'Restricted portal for disaster management officials';
+          identifierInput.placeholder = 'official.email@gov.in or Mobile';
+        } else {
+          tabCitizen.classList.add('active');
+          tabAuthority.classList.remove('active');
+          heading.textContent = 'Citizen Sign In';
+          subtext.textContent = 'Access real-time safety feeds and report local hazards';
+          identifierInput.placeholder = 'citizen@worldmonitor.org or Mobile';
+        }
+      }
+
+      setRole(currentRole);
+
+      tabCitizen.addEventListener('click', () => setRole('CITIZEN'));
+      tabAuthority.addEventListener('click', () => setRole('AUTHORITY'));
+
+      // Quick Demo Fills
+      document.getElementById('fill-citizen').addEventListener('click', () => {
+        setRole('CITIZEN');
+        identifierInput.value = 'citizen@worldmonitor.org';
+        passwordInput.value = 'CitizenPassword@123';
+      });
+
+      document.getElementById('fill-authority').addEventListener('click', () => {
+        setRole('AUTHORITY');
+        identifierInput.value = 'admin@worldmonitor.gov.in';
+        passwordInput.value = 'AdminPassword@123';
+      });
+
+      // Submit Login
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById('login-submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'AUTHENTICATING...';
+
+        const res = await Auth.login(identifierInput.value.trim(), passwordInput.value, currentRole);
+        if (res.success) {
+          window.location.href = '/dashboard.html';
+        } else {
+          alert('Login Failed: ' + (res.error || 'Invalid credentials'));
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i data-lucide="log-in"></i> Sign In to Portal';
+          if (window.lucide) lucide.createIcons();
+        }
+      });
+
+      // Forgot Password Link
+      document.getElementById('forgot-password-link').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = prompt('Enter your registered email address for reset code:', identifierInput.value || '');
+        if (email) {
+          const res = await API.post('/api/auth/forgot-password', { email });
+          alert(res.message || 'Reset link sent');
+        }
+      });
+
+      // Google Mock
+      document.getElementById('google-login-btn').addEventListener('click', () => {
+        identifierInput.value = currentRole === 'AUTHORITY' ? 'admin@worldmonitor.gov.in' : 'citizen@worldmonitor.org';
+        passwordInput.value = currentRole === 'AUTHORITY' ? 'AdminPassword@123' : 'CitizenPassword@123';
+        form.requestSubmit();
+      });
+    });
+  </script>
+</body>
+</html>

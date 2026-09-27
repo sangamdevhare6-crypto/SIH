@@ -1,0 +1,168 @@
+/* ============================================================
+   WORLD MONITOR - CYBERNETIC & HUD ANIMATIONS
+   ============================================================ */
+
+/* 1. Radar Sweep Animation */
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.radar-sweep-beam {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 50%;
+  transform-origin: 0% 0%;
+  background: conic-gradient(from 0deg, rgba(0, 245, 255, 0.4) 0deg, rgba(0, 245, 255, 0.05) 45deg, transparent 60deg);
+  border-top: 2px solid var(--cyan-bright);
+  animation: radar-sweep 4s linear infinite;
+  pointer-events: none;
+  border-radius: 100% 0 0 0;
+  filter: drop-shadow(0 0 8px var(--cyan-bright));
+}
+
+/* 2. Beacon Marker Pulse */
+@keyframes beacon-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 255, 163, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(0, 255, 163, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 255, 163, 0);
+  }
+}
+
+@keyframes beacon-pulse-danger {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.8);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 14px rgba(255, 51, 102, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(255, 51, 102, 0);
+  }
+}
+
+/* 3. Page Fade In */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 4. Card Stagger Slide Up */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 5. Neon Border Glow Pulse */
+@keyframes neon-glow-pulse {
+  0%, 100% {
+    border-color: rgba(0, 217, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
+  }
+  50% {
+    border-color: rgba(0, 245, 255, 0.9);
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+  }
+}
+
+.neon-border-pulsing {
+  animation: neon-glow-pulse 3s infinite ease-in-out;
+}
+
+/* 6. Toast Slide In */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 7. Loading Skeleton */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(0, 27, 51, 0.6) 25%, rgba(0, 59, 102, 0.8) 50%, rgba(0, 27, 51, 0.6) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* 8. Cyber Scanner Line */
+@keyframes scanline {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+.scanner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
+  box-shadow: 0 0 10px var(--cyan-bright);
+  animation: scanline 3.5s linear infinite;
+  pointer-events: none;
+}
+
+/* Prefers-reduced-motion compliance */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

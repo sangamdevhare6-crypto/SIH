@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Evacuation Routes | WORLD MONITOR</title>
+  <meta name="description" content="AI-guided safe emergency evacuation routes bypassing submerged choke points, active flood plains, and roadblocks.">
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Core Styles -->
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body class="app-layout">
+
+  <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="/dashboard.html" class="brand-container">
+        <div class="brand-icon-box">
+          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-text-box">
+          <span class="brand-title">WORLD MONITOR</span>
+          <span class="brand-tagline">Real-time • Safe • Together</span>
+        </div>
+      </a>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">
+        <i data-lucide="panel-left-close"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Telemetry & Radar</div>
+      <a href="/dashboard.html" class="nav-link">
+        <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+      </a>
+      <a href="/radar.html" class="nav-link">
+        <i data-lucide="crosshair"></i> <span>Live Radar</span>
+      </a>
+      <a href="/nowcast.html" class="nav-link">
+        <i data-lucide="cloud-lightning"></i> <span>Nowcast</span>
+      </a>
+      <a href="/flood-map.html" class="nav-link">
+        <i data-lucide="waves"></i> <span>Flood Map</span>
+      </a>
+
+      <div class="nav-section-title">Emergency Response</div>
+      <a href="/alerts.html" class="nav-link">
+        <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+      </a>
+      <a href="/safe-routes.html" class="nav-link active">
+        <i data-lucide="map-pin"></i> <span>Safe Routes</span>
+      </a>
+      <a href="/infrastructure.html" class="nav-link">
+        <i data-lucide="building-2"></i> <span>Infrastructure</span>
+      </a>
+      <a href="/citizen-reports.html" class="nav-link">
+        <i data-lucide="megaphone"></i> <span>Citizen Reports</span>
+      </a>
+
+      <div class="nav-section-title">Analytics & Sensors</div>
+      <a href="/reports.html" class="nav-link">
+        <i data-lucide="file-text"></i> <span>Reports</span>
+      </a>
+      <a href="/monitoring-stations.html" class="nav-link">
+        <i data-lucide="cpu"></i> <span>Monitoring Stations</span>
+      </a>
+      <a href="/weather-data.html" class="nav-link">
+        <i data-lucide="wind"></i> <span>Weather Data</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/settings.html" class="nav-link">
+        <i data-lucide="settings"></i> <span>Settings</span>
+      </a>
+      <a href="/profile.html" class="nav-link">
+        <i data-lucide="user"></i> <span>Profile</span>
+      </a>
+      <a href="#" class="nav-link logout-link" id="logout-trigger-btn">
+        <i data-lucide="log-out"></i> <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Viewport -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open Menu">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <div class="location-selector-wrap">
+          <i data-lucide="map-pin"></i>
+          <select id="global-city-select" class="city-select">
+            <option value="Chhatrapati Sambhajinagar">Chhatrapati Sambhajinagar</option>
+            <option value="Pune">Pune</option>
+            <option value="Nashik">Nashik</option>
+            <option value="Nagpur">Nagpur</option>
+          </select>
+        </div>
+
+        <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">
+          --:--:-- IST
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-status-pill">
+          <span class="pulse-dot"></span> ROUTING ENGINE SECURE
+        </div>
+
+        <button class="notif-bell-btn" id="notif-bell-btn" title="Emergency Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
+        </button>
+
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-header">
+            <span style="font-family: var(--font-orbitron); font-size: 0.95rem; font-weight: 700; color: #FFF;">
+              Emergency Notifications
+            </span>
+            <button id="mark-all-read-btn" style="background: none; border: none; color: var(--cyan-bright); font-size: 0.78rem; cursor: pointer;">
+              Mark all as read
+            </button>
+          </div>
+          <div class="notif-list" id="notif-list"></div>
+        </div>
+
+        <a href="/profile.html" class="user-profile-pill">
+          <img src="/assets/avatars/officer.png" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'" class="user-avatar-img" id="topbar-avatar-img" alt="Avatar">
+          <div class="user-info-text">
+            <span class="user-name" id="topbar-user-name">Commander Admin</span>
+            <span class="user-role-tag" id="topbar-user-role">AUTHORITY</span>
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <!-- Safe Routes Content Area -->
+    <main class="content-area">
+      <div class="dashboard-greeting-bar animate-fade-in">
+        <div>
+          <h1>Safe Evacuation Routes & Corridor Navigation</h1>
+          <div class="greeting-subtitle">
+            <i data-lucide="navigation" style="color: var(--green-neon);"></i>
+            Elevated Corridors Avoiding Inundation Polygons & Blocked Roadways
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-main-grid animate-slide-up">
+        <!-- Interactive Map Container -->
+        <div class="hud-panel" style="padding: 0; overflow: hidden; position: relative;">
+          <div id="safe-routes-map" style="width: 100%; height: 580px; border-radius: var(--radius-md);"></div>
+
+          <!-- Legend Overlay (Section 16: Safe Route, Blocked Route, Risk Area, Shelter) -->
+          <div style="position: absolute; bottom: 20px; left: 20px; background: rgba(0, 27, 51, 0.9); border: 1px solid var(--border-neon); border-radius: var(--radius-sm); padding: 12px 16px; z-index: 800; backdrop-filter: blur(10px);">
+            <div style="font-family: var(--font-orbitron); font-size: 0.8rem; font-weight: 700; color: #FFF; margin-bottom: 8px;">
+              NAVIGATION MATRIX
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem; font-family: var(--font-rajdhani); font-weight: 600;">
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 16px; height: 4px; background: #00FFA3; display: inline-block; border-radius: 2px;"></span> Safe Clear Route (High Ground)
+              </span>
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 16px; height: 4px; background: #FF3366; display: inline-block; border-radius: 2px; border-top: 2px dashed #FFF;"></span> Submerged / Blocked Corridor
+              </span>
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 12px; height: 12px; background: rgba(255, 51, 102, 0.4); border: 1px solid #FF3366; display: inline-block;"></span> Active Hazard / Flood Plain
+              </span>
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 14px; height: 14px; border-radius: 50%; background: #00FFA3; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; color: #000;">🏠</span> Official Evacuation Refuge
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Safe Route Finder Form (Section 16) -->
+        <div class="hud-panel" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div class="hud-panel-header">
+              <div class="hud-panel-title">
+                <i data-lucide="compass" style="color: var(--cyan-bright);"></i>
+                Calculate Hazard-Free Route
+              </div>
+            </div>
+
+            <form id="find-safe-route-form">
+              <div class="form-group">
+                <label class="form-label">Current Location / Departure Point *</label>
+                <select id="route-origin" class="form-select" required>
+                  <option value="Begumpura Chawk">Begumpura Chawk (Active Flood Zone)</option>
+                  <option value="Old Bazar Market">Old Bazar Market</option>
+                  <option value="Kranti Chawk">Kranti Chawk</option>
+                  <option value="Cidco N-4 Sector">Cidco N-4 Sector</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Destination Safe Shelter *</label>
+                <select id="route-destination" class="form-select" required>
+                  <option value="Divisional Sports Complex Shelter, Garkheda">Divisional Sports Complex Shelter, Garkheda (Open)</option>
+                  <option value="Cidco Community Hall Safe Hub">Cidco Community Hall Safe Hub (Open)</option>
+                  <option value="University Auditorium Safe Haven">University Auditorium Safe Haven (Open)</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">
+                <i data-lucide="route"></i> Compute Elevation Safe Route
+              </button>
+            </form>
+
+            <div id="route-calculation-result" style="display: none;"></div>
+          </div>
+
+          <div style="padding: 12px; background: rgba(0, 255, 163, 0.08); border: 1px solid rgba(0, 255, 163, 0.3); border-radius: var(--radius-sm); margin-top: 16px;">
+            <div style="font-family: var(--font-rajdhani); font-weight: 700; color: var(--green-neon); font-size: 0.88rem; margin-bottom: 4px;">
+              EMERGENCY CONVOY ESCORT:
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">
+              Traffic police stationed on Kranti Chawk Flyover. University road cleared for ambulances and high-axle relief trucks.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <a href="/dashboard.html" class="mobile-bottom-item">
+      <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+    </a>
+    <a href="/radar.html" class="mobile-bottom-item">
+      <i data-lucide="crosshair"></i> <span>Radar</span>
+    </a>
+    <a href="/alerts.html" class="mobile-bottom-item">
+      <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+    </a>
+    <a href="/citizen-reports.html" class="mobile-bottom-item">
+      <i data-lucide="megaphone"></i> <span>Report</span>
+    </a>
+    <a href="/profile.html" class="mobile-bottom-item">
+      <i data-lucide="user"></i> <span>Profile</span>
+    </a>
+  </nav>
+
+  <!-- Logout Modal -->
+  <div class="modal-overlay" id="logout-modal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; color: #FFF;">Confirm Session Termination</h3>
+        <button class="sidebar-toggle-btn" id="logout-cancel-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Are you sure you want to logout of the <b>WORLD MONITOR</b> command terminal?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('logout-modal').classList.remove('active')">
+          Cancel
+        </button>
+        <button class="btn btn-danger" id="logout-confirm-btn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/routes.js"></script>
+</body>
+</html>

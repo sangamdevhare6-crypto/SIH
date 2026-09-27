@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Alerts & Warnings | WORLD MONITOR</title>
+  <meta name="description" content="Real-time disaster alerts, flash flood warnings, and multi-agency civil defense notifications.">
+
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="app-layout">
+
+  <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="/dashboard.html" class="brand-container">
+        <div class="brand-icon-box">
+          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-text-box">
+          <span class="brand-title">WORLD MONITOR</span>
+          <span class="brand-tagline">Real-time • Safe • Together</span>
+        </div>
+      </a>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">
+        <i data-lucide="panel-left-close"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Telemetry & Radar</div>
+      <a href="/dashboard.html" class="nav-link">
+        <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+      </a>
+      <a href="/radar.html" class="nav-link">
+        <i data-lucide="crosshair"></i> <span>Live Radar</span>
+      </a>
+      <a href="/nowcast.html" class="nav-link">
+        <i data-lucide="cloud-lightning"></i> <span>Nowcast</span>
+      </a>
+      <a href="/flood-map.html" class="nav-link">
+        <i data-lucide="waves"></i> <span>Flood Map</span>
+      </a>
+
+      <div class="nav-section-title">Emergency Response</div>
+      <a href="/alerts.html" class="nav-link active">
+        <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+      </a>
+      <a href="/safe-routes.html" class="nav-link">
+        <i data-lucide="map-pin"></i> <span>Safe Routes</span>
+      </a>
+      <a href="/infrastructure.html" class="nav-link">
+        <i data-lucide="building-2"></i> <span>Infrastructure</span>
+      </a>
+      <a href="/citizen-reports.html" class="nav-link">
+        <i data-lucide="megaphone"></i> <span>Citizen Reports</span>
+      </a>
+
+      <div class="nav-section-title">Analytics & Sensors</div>
+      <a href="/reports.html" class="nav-link">
+        <i data-lucide="file-text"></i> <span>Reports</span>
+      </a>
+      <a href="/monitoring-stations.html" class="nav-link">
+        <i data-lucide="cpu"></i> <span>Monitoring Stations</span>
+      </a>
+      <a href="/weather-data.html" class="nav-link">
+        <i data-lucide="wind"></i> <span>Weather Data</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/settings.html" class="nav-link">
+        <i data-lucide="settings"></i> <span>Settings</span>
+      </a>
+      <a href="/profile.html" class="nav-link">
+        <i data-lucide="user"></i> <span>Profile</span>
+      </a>
+      <a href="#" class="nav-link logout-link" id="logout-trigger-btn">
+        <i data-lucide="log-out"></i> <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Viewport -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open Menu">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <div class="location-selector-wrap">
+          <i data-lucide="map-pin"></i>
+          <select id="global-city-select" class="city-select">
+            <option value="Chhatrapati Sambhajinagar">Chhatrapati Sambhajinagar</option>
+            <option value="Pune">Pune</option>
+            <option value="Nashik">Nashik</option>
+            <option value="Nagpur">Nagpur</option>
+          </select>
+        </div>
+
+        <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">
+          --:--:-- IST
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-status-pill">
+          <span class="pulse-dot"></span> EARLY WARNING PROTOCOL ON
+        </div>
+
+        <button class="notif-bell-btn" id="notif-bell-btn" title="Emergency Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
+        </button>
+
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-header">
+            <span style="font-family: var(--font-orbitron); font-size: 0.95rem; font-weight: 700; color: #FFF;">
+              Emergency Notifications
+            </span>
+            <button id="mark-all-read-btn" style="background: none; border: none; color: var(--cyan-bright); font-size: 0.78rem; cursor: pointer;">
+              Mark all as read
+            </button>
+          </div>
+          <div class="notif-list" id="notif-list"></div>
+        </div>
+
+        <a href="/profile.html" class="user-profile-pill">
+          <img src="/assets/avatars/officer.png" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'" class="user-avatar-img" id="topbar-avatar-img" alt="Avatar">
+          <div class="user-info-text">
+            <span class="user-name" id="topbar-user-name">Commander Admin</span>
+            <span class="user-role-tag" id="topbar-user-role">AUTHORITY</span>
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <!-- Alerts Content Area -->
+    <main class="content-area">
+      <div class="dashboard-greeting-bar animate-fade-in">
+        <div>
+          <h1>Emergency Alerts & Siren Warnings</h1>
+          <div class="greeting-subtitle">
+            <i data-lucide="siren" style="color: var(--danger-crimson);"></i>
+            Central Civil Protection Log & Public Early Warning Broadcast Matrix
+          </div>
+        </div>
+
+        <!-- Authority Broadcast Button (Hidden for citizens, shown for Authority) -->
+        <button class="btn btn-danger" id="btn-broadcast-alert" style="display: none;">
+          <i data-lucide="radio"></i> Broadcast New Emergency Alert
+        </button>
+      </div>
+
+      <!-- Filters & Controls Bar (Section 15: All, High, Medium, Low) -->
+      <div class="hud-panel animate-slide-up" style="padding: 14px 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-family: var(--font-rajdhani); font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+              Risk Filter:
+            </span>
+            <button class="btn btn-outline alert-filter-btn active" data-filter="All" style="padding: 6px 14px; font-size: 0.85rem;">
+              All
+            </button>
+            <button class="btn btn-outline alert-filter-btn" data-filter="Very High" style="padding: 6px 14px; font-size: 0.85rem; border-color: #FF3366; color: #FF3366;">
+              Very High
+            </button>
+            <button class="btn btn-outline alert-filter-btn" data-filter="High" style="padding: 6px 14px; font-size: 0.85rem; border-color: #FFB020; color: #FFB020;">
+              High
+            </button>
+            <button class="btn btn-outline alert-filter-btn" data-filter="Moderate" style="padding: 6px 14px; font-size: 0.85rem; border-color: #00F5FF; color: #00F5FF;">
+              Moderate
+            </button>
+            <button class="btn btn-outline alert-filter-btn" data-filter="Low" style="padding: 6px 14px; font-size: 0.85rem; border-color: #00FFA3; color: #00FFA3;">
+              Low
+            </button>
+          </div>
+
+          <div style="font-family: var(--font-rajdhani); font-size: 0.88rem; color: var(--text-secondary);">
+            Showing active threats across Maharashtra division
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts Table (Section 15: Time, Location, Type, Risk Level, Status) -->
+      <div class="hud-panel animate-slide-up" style="padding: 0; overflow: hidden;">
+        <div class="hud-table-wrapper">
+          <table class="hud-table">
+            <thead>
+              <tr>
+                <th>Broadcast Time</th>
+                <th>Alert Title & Target Location</th>
+                <th>Threat Category</th>
+                <th>Risk Level</th>
+                <th>Protocol Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="alerts-table-body">
+              <!-- Dynamically populated via alerts.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Broadcast Alert Modal (Authority Only) -->
+  <div class="modal-overlay" id="broadcast-alert-modal">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; color: #FFF; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="radio" style="color: var(--danger-crimson);"></i> Broadcast Emergency Siren & Alert
+        </h3>
+        <button class="sidebar-toggle-btn" id="broadcast-cancel-btn">✕</button>
+      </div>
+
+      <form id="broadcast-alert-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Alert Headline *</label>
+            <input type="text" id="new-alert-title" class="form-input" placeholder="e.g. Flash Flood Red Warning - Kham River Catchment" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Category *</label>
+              <select id="new-alert-type" class="form-select" required>
+                <option value="Flash Flood">Flash Flood</option>
+                <option value="Heavy Rainfall">Heavy Rainfall</option>
+                <option value="River Level">River Level</option>
+                <option value="Landslide">Landslide</option>
+                <option value="Weather Alert">Weather Alert</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Risk Level *</label>
+              <select id="new-alert-risk" class="form-select" required>
+                <option value="Very High">Very High (Red Alert)</option>
+                <option value="High">High (Orange Alert)</option>
+                <option value="Moderate">Moderate (Yellow Alert)</option>
+                <option value="Low">Low (Advisory)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Location / Corridor *</label>
+            <input type="text" id="new-alert-location" class="form-input" placeholder="e.g. Begumpura & Cidco Sector 3, Chhatrapati Sambhajinagar" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Estimated Affected Population</label>
+            <input type="text" id="new-alert-population" class="form-input" placeholder="e.g. ~45,000 citizens">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Civil Advisory Description *</label>
+            <textarea id="new-alert-desc" class="form-textarea" rows="3" placeholder="Actionable guidance for civilians and local response units..." required></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('broadcast-alert-modal').classList.remove('active')">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-danger">
+            <i data-lucide="send"></i> Dispatch Real-Time Broadcast
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <a href="/dashboard.html" class="mobile-bottom-item">
+      <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+    </a>
+    <a href="/radar.html" class="mobile-bottom-item">
+      <i data-lucide="crosshair"></i> <span>Radar</span>
+    </a>
+    <a href="/alerts.html" class="mobile-bottom-item active">
+      <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+    </a>
+    <a href="/citizen-reports.html" class="mobile-bottom-item">
+      <i data-lucide="megaphone"></i> <span>Report</span>
+    </a>
+    <a href="/profile.html" class="mobile-bottom-item">
+      <i data-lucide="user"></i> <span>Profile</span>
+    </a>
+  </nav>
+
+  <!-- Logout Modal -->
+  <div class="modal-overlay" id="logout-modal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; color: #FFF;">Confirm Session Termination</h3>
+        <button class="sidebar-toggle-btn" id="logout-cancel-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Are you sure you want to logout of the <b>WORLD MONITOR</b> command terminal?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('logout-modal').classList.remove('active')">
+          Cancel
+        </button>
+        <button class="btn btn-danger" id="logout-confirm-btn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/alerts.js"></script>
+</body>
+</html>

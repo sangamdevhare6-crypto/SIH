@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infrastructure Asset Inspection | WORLD MONITOR</title>
+  <meta name="description" content="In-depth sensor telemetry, hydraulic inflow/outflow, and structural stress history.">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="app-layout">
+
+  <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="/dashboard.html" class="brand-container">
+        <div class="brand-icon-box">
+          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-text-box">
+          <span class="brand-title">WORLD MONITOR</span>
+          <span class="brand-tagline">Real-time • Safe • Together</span>
+        </div>
+      </a>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">
+        <i data-lucide="panel-left-close"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Telemetry & Radar</div>
+      <a href="/dashboard.html" class="nav-link">
+        <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+      </a>
+      <a href="/radar.html" class="nav-link">
+        <i data-lucide="crosshair"></i> <span>Live Radar</span>
+      </a>
+      <a href="/nowcast.html" class="nav-link">
+        <i data-lucide="cloud-lightning"></i> <span>Nowcast</span>
+      </a>
+      <a href="/flood-map.html" class="nav-link">
+        <i data-lucide="waves"></i> <span>Flood Map</span>
+      </a>
+
+      <div class="nav-section-title">Emergency Response</div>
+      <a href="/alerts.html" class="nav-link">
+        <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+      </a>
+      <a href="/safe-routes.html" class="nav-link">
+        <i data-lucide="map-pin"></i> <span>Safe Routes</span>
+      </a>
+      <a href="/infrastructure.html" class="nav-link active">
+        <i data-lucide="building-2"></i> <span>Infrastructure</span>
+      </a>
+      <a href="/citizen-reports.html" class="nav-link">
+        <i data-lucide="megaphone"></i> <span>Citizen Reports</span>
+      </a>
+
+      <div class="nav-section-title">Analytics & Sensors</div>
+      <a href="/reports.html" class="nav-link">
+        <i data-lucide="file-text"></i> <span>Reports</span>
+      </a>
+      <a href="/monitoring-stations.html" class="nav-link">
+        <i data-lucide="cpu"></i> <span>Monitoring Stations</span>
+      </a>
+      <a href="/weather-data.html" class="nav-link">
+        <i data-lucide="wind"></i> <span>Weather Data</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/settings.html" class="nav-link">
+        <i data-lucide="settings"></i> <span>Settings</span>
+      </a>
+      <a href="/profile.html" class="nav-link">
+        <i data-lucide="user"></i> <span>Profile</span>
+      </a>
+      <a href="#" class="nav-link logout-link" id="logout-trigger-btn">
+        <i data-lucide="log-out"></i> <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Viewport -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open Menu">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <a href="/infrastructure.html" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem; gap: 6px;">
+          <i data-lucide="arrow-left"></i> All Assets
+        </a>
+
+        <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">
+          --:--:-- IST
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-status-pill">
+          <span class="pulse-dot"></span> SENSOR FEED SYNCHRONIZED
+        </div>
+
+        <button class="notif-bell-btn" id="notif-bell-btn" title="Emergency Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
+        </button>
+
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-header">
+            <span style="font-family: var(--font-orbitron); font-size: 0.95rem; font-weight: 700; color: #FFF;">
+              Emergency Notifications
+            </span>
+            <button id="mark-all-read-btn" style="background: none; border: none; color: var(--cyan-bright); font-size: 0.78rem; cursor: pointer;">
+              Mark all as read
+            </button>
+          </div>
+          <div class="notif-list" id="notif-list"></div>
+        </div>
+
+        <a href="/profile.html" class="user-profile-pill">
+          <img src="/assets/avatars/officer.png" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'" class="user-avatar-img" id="topbar-avatar-img" alt="Avatar">
+          <div class="user-info-text">
+            <span class="user-name" id="topbar-user-name">Commander Admin</span>
+            <span class="user-role-tag" id="topbar-user-role">AUTHORITY</span>
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <!-- Details Content Area (Section 22 Specification) -->
+    <main class="content-area">
+      <!-- Header Banner -->
+      <div class="dashboard-greeting-bar animate-fade-in">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+            <h1 id="detail-asset-name">Jayakwadi Dam (Nath Sagar)</h1>
+            <span class="badge badge-warning" id="detail-asset-status">Warning: High Storage</span>
+          </div>
+          <div class="greeting-subtitle">
+            <i data-lucide="map-pin" style="color: var(--cyan-bright);"></i>
+            Location: <span id="detail-asset-location" style="color: #FFF;">Paithan, Chhatrapati Sambhajinagar</span>
+            • Asset Category: <span id="detail-asset-type" style="color: var(--cyan-bright);">Dam</span>
+            • Last Inspected: <span id="detail-last-updated" style="color: var(--text-muted);">Live Telemetry</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-outline" onclick="window.print()">
+            <i data-lucide="printer"></i> Export Telemetry PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick KPI Counters -->
+      <div class="weather-kpi-grid animate-slide-up">
+        <div class="kpi-card kpi-warning">
+          <div class="kpi-data">
+            <span class="kpi-label">Current Reservoir Level</span>
+            <span class="kpi-value" id="kpi-current-level">463.80 m</span>
+            <span class="kpi-meta">Maximum Full Crest: 464.00 m (96.4%)</span>
+          </div>
+          <div class="kpi-icon-wrap" style="color: var(--warning-amber);">
+            <i data-lucide="waves"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-data">
+            <span class="kpi-label">Current Inflow Rate</span>
+            <span class="kpi-value" style="color: var(--cyan-bright);">48,500</span>
+            <span class="kpi-meta">cusecs (Godavari Upper Influx)</span>
+          </div>
+          <div class="kpi-icon-wrap">
+            <i data-lucide="arrow-down-right"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-danger">
+          <div class="kpi-data">
+            <span class="kpi-label">Spillway Outflow Discharge</span>
+            <span class="kpi-value" style="color: var(--danger-crimson);">48,500</span>
+            <span class="kpi-meta">cusecs (14 Spillway Gates Open)</span>
+          </div>
+          <div class="kpi-icon-wrap" style="color: var(--danger-crimson);">
+            <i data-lucide="arrow-up-right"></i>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-data">
+            <span class="kpi-label">Structural Health Score</span>
+            <span class="kpi-value" style="color: var(--green-neon);">84%</span>
+            <span class="kpi-meta">Pore Pressure Normal (0.32 MPa)</span>
+          </div>
+          <div class="kpi-icon-wrap" style="color: var(--green-neon);">
+            <i data-lucide="shield-check"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Tabs: Overview, Sensors, History, Documents (Section 22) -->
+      <div class="hud-panel animate-slide-up" style="padding: 10px 16px;">
+        <div class="auth-role-tabs" style="margin-bottom: 0; max-width: 500px;">
+          <button class="role-tab-btn active" id="tab-overview" type="button">Overview</button>
+          <button class="role-tab-btn" id="tab-sensors" type="button">Active Sensors</button>
+          <button class="role-tab-btn" id="tab-history" type="button">Hydraulic Chart</button>
+          <button class="role-tab-btn" id="tab-docs" type="button">Documents</button>
+        </div>
+      </div>
+
+      <!-- Tab Contents -->
+      <div id="content-overview" class="tab-pane animate-fade-in">
+        <div class="dashboard-main-grid">
+          <div class="hud-panel">
+            <div class="hud-panel-header">
+              <div class="hud-panel-title">
+                <i data-lucide="activity" style="color: var(--cyan-bright);"></i>
+                Hydraulic Elevation Trend (24 Hours)
+              </div>
+            </div>
+            <div style="position: relative; height: 320px;">
+              <canvas id="reservoirTrendChart"></canvas>
+            </div>
+          </div>
+
+          <div class="hud-panel" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div class="hud-panel-header">
+                <div class="hud-panel-title">
+                  <i data-lucide="cpu" style="color: var(--cyan-bright);"></i>
+                  Active Instrumentation Nodes
+                </div>
+              </div>
+              <div id="overview-sensors-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <div style="padding: 12px; background: rgba(0, 59, 102, 0.3); border-radius: var(--radius-sm); margin-top: 14px;">
+              <div style="font-family: var(--font-rajdhani); font-weight: 700; color: var(--warning-amber); font-size: 0.88rem;">
+                SUPERVISORY SPILLWAY DIRECTIVE:
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">
+                Dam safety wing maintains 24x7 gauge watch. Downstream Paithan and Gangapur tehsildars issued automated SMS alerts.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensors Tab -->
+      <div id="content-sensors" class="tab-pane" style="display: none;">
+        <div class="hud-panel animate-fade-in" style="padding: 0; overflow: hidden;">
+          <table class="hud-table">
+            <thead>
+              <tr>
+                <th>Telemetry Sensor Unit</th>
+                <th>Measured Reading</th>
+                <th>Baseline Norm</th>
+                <th>Sensory Health</th>
+              </tr>
+            </thead>
+            <tbody id="sensors-tab-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- History Tab -->
+      <div id="content-history" class="tab-pane" style="display: none;">
+        <div class="hud-panel animate-fade-in">
+          <div class="hud-panel-header">
+            <div class="hud-panel-title">
+              <i data-lucide="bar-chart-2" style="color: var(--cyan-bright);"></i>
+              Inflow vs Outflow Discharge Dynamics
+            </div>
+          </div>
+          <div style="position: relative; height: 350px;">
+            <canvas id="dischargeHistoryChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documents Tab -->
+      <div id="content-docs" class="tab-pane" style="display: none;">
+        <div class="hud-panel animate-fade-in" style="padding: 0; overflow: hidden;">
+          <table class="hud-table">
+            <thead>
+              <tr>
+                <th>Document Name</th>
+                <th>File Size</th>
+                <th>Certified Date</th>
+                <th>Issuing Authority</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="docs-tab-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <a href="/dashboard.html" class="mobile-bottom-item">
+      <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+    </a>
+    <a href="/radar.html" class="mobile-bottom-item">
+      <i data-lucide="crosshair"></i> <span>Radar</span>
+    </a>
+    <a href="/alerts.html" class="mobile-bottom-item">
+      <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+    </a>
+    <a href="/citizen-reports.html" class="mobile-bottom-item">
+      <i data-lucide="megaphone"></i> <span>Report</span>
+    </a>
+    <a href="/profile.html" class="mobile-bottom-item">
+      <i data-lucide="user"></i> <span>Profile</span>
+    </a>
+  </nav>
+
+  <!-- Logout Modal -->
+  <div class="modal-overlay" id="logout-modal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; color: #FFF;">Confirm Session Termination</h3>
+        <button class="sidebar-toggle-btn" id="logout-cancel-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Are you sure you want to logout of the <b>WORLD MONITOR</b> command terminal?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('logout-modal').classList.remove('active')">
+          Cancel
+        </button>
+        <button class="btn btn-danger" id="logout-confirm-btn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const assetId = params.get('id') || '10000000-0000-0000-0000-000000000001';
+
+      try {
+        const res = await API.get(`/api/infrastructure/${assetId}`);
+        if (res && res.success && res.data) {
+          renderAssetDetails(res.data);
+        }
+      } catch (e) {
+        console.warn('Infra detail failed:', e);
+      }
+
+      function renderAssetDetails(d) {
+        document.getElementById('detail-asset-name').textContent = d.name;
+        document.getElementById('detail-asset-location').textContent = d.location;
+        document.getElementById('detail-asset-type').textContent = d.type;
+        document.getElementById('kpi-current-level').textContent = `${d.current_level} ${d.unit}`;
+
+        const statusEl = document.getElementById('detail-asset-status');
+        if (statusEl) {
+          statusEl.textContent = `Status: ${d.status}`;
+          statusEl.className = `badge ${d.status === 'At Risk' ? 'badge-danger' : (d.status === 'Warning' ? 'badge-warning' : 'badge-success')}`;
+        }
+
+        // Render Sensors List
+        const sList = document.getElementById('overview-sensors-list');
+        const sTable = document.getElementById('sensors-tab-table');
+        if (d.sensors && d.sensors.length > 0) {
+          if (sList) {
+            sList.innerHTML = d.sensors.map(s => `
+              <div class="risk-area-item" style="padding: 8px 12px; margin-bottom: 0;">
+                <span style="font-size: 0.85rem; color: #FFF; font-weight: 600;">${s.name}</span>
+                <span class="badge ${s.status === 'Critical' ? 'badge-danger' : (s.status === 'Warning' ? 'badge-warning' : 'badge-cyan')}" style="font-size: 0.72rem;">
+                  ${s.val}
+                </span>
+              </div>
+            `).join('');
+          }
+          if (sTable) {
+            sTable.innerHTML = d.sensors.map(s => `
+              <tr>
+                <td style="font-weight: 600; color: #FFF;">${s.name}</td>
+                <td style="font-family: var(--font-orbitron); color: var(--cyan-bright);">${s.val}</td>
+                <td style="color: var(--text-muted); font-size: 0.85rem;">Continuous Calibration</td>
+                <td><span class="badge ${s.status === 'Critical' ? 'badge-danger' : 'badge-success'}"><span class="pulse-dot"></span> Operational</span></td>
+              </tr>
+            `).join('');
+          }
+        }
+
+        // Render Documents
+        const dTable = document.getElementById('docs-tab-table');
+        if (dTable && d.documents) {
+          dTable.innerHTML = d.documents.map(doc => `
+            <tr>
+              <td style="font-weight: 600; color: #FFF; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="file-text" style="color: var(--cyan-bright); width: 16px; height: 16px;"></i> ${doc.name}
+              </td>
+              <td style="color: var(--text-secondary); font-size: 0.85rem;">${doc.size}</td>
+              <td style="color: var(--text-secondary); font-size: 0.85rem;">${doc.date}</td>
+              <td style="color: var(--cyan-vibrant); font-size: 0.85rem;">${doc.authority}</td>
+              <td>
+                <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="window.showToast('Accessing secure archive...', 'info')">
+                  Download
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        // Render Charts with Chart.js
+        if (window.Chart && d.sensorHistory) {
+          renderReservoirChart(d.sensorHistory);
+          renderDischargeChart(d.sensorHistory);
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      function renderReservoirChart(h) {
+        const ctx = document.getElementById('reservoirTrendChart');
+        if (!ctx) return;
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: h.labels,
+            datasets: [{
+              label: 'Water Level (m MSL)',
+              data: h.waterLevels,
+              borderColor: '#00F5FF',
+              backgroundColor: 'rgba(0, 245, 255, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94A3B8' } } },
+            scales: {
+              x: { grid: { color: 'rgba(0,59,102,0.3)' }, ticks: { color: '#64748B' } },
+              y: { grid: { color: 'rgba(0,59,102,0.3)' }, ticks: { color: '#00F5FF' } }
+            }
+          }
+        });
+      }
+
+      function renderDischargeChart(h) {
+        const ctx = document.getElementById('dischargeHistoryChart');
+        if (!ctx) return;
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: h.labels,
+            datasets: [
+              { label: 'Inflow (cusecs)', data: h.inflowRate, backgroundColor: 'rgba(0, 217, 255, 0.7)' },
+              { label: 'Outflow (cusecs)', data: h.outflowDischarge, backgroundColor: 'rgba(255, 51, 102, 0.7)' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94A3B8' } } },
+            scales: {
+              x: { grid: { color: 'rgba(0,59,102,0.3)' }, ticks: { color: '#64748B' } },
+              y: { grid: { color: 'rgba(0,59,102,0.3)' }, ticks: { color: '#FFF' } }
+            }
+          }
+        });
+      }
+
+      // Tab switcher
+      const tabs = ['overview', 'sensors', 'history', 'docs'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const content = document.getElementById(`content-${t}`);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            tabs.forEach(other => {
+              document.getElementById(`tab-${other}`).classList.remove('active');
+              document.getElementById(`content-${other}`).style.display = 'none';
+            });
+            btn.classList.add('active');
+            content.style.display = 'block';
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

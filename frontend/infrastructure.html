@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Critical Infrastructure Monitoring | WORLD MONITOR</title>
+  <meta name="description" content="Structural telemetry, reservoir water levels, and bridge sensor monitoring.">
+
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="app-layout">
+
+  <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="/dashboard.html" class="brand-container">
+        <div class="brand-icon-box">
+          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-text-box">
+          <span class="brand-title">WORLD MONITOR</span>
+          <span class="brand-tagline">Real-time • Safe • Together</span>
+        </div>
+      </a>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">
+        <i data-lucide="panel-left-close"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Telemetry & Radar</div>
+      <a href="/dashboard.html" class="nav-link">
+        <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+      </a>
+      <a href="/radar.html" class="nav-link">
+        <i data-lucide="crosshair"></i> <span>Live Radar</span>
+      </a>
+      <a href="/nowcast.html" class="nav-link">
+        <i data-lucide="cloud-lightning"></i> <span>Nowcast</span>
+      </a>
+      <a href="/flood-map.html" class="nav-link">
+        <i data-lucide="waves"></i> <span>Flood Map</span>
+      </a>
+
+      <div class="nav-section-title">Emergency Response</div>
+      <a href="/alerts.html" class="nav-link">
+        <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+      </a>
+      <a href="/safe-routes.html" class="nav-link">
+        <i data-lucide="map-pin"></i> <span>Safe Routes</span>
+      </a>
+      <a href="/infrastructure.html" class="nav-link active">
+        <i data-lucide="building-2"></i> <span>Infrastructure</span>
+      </a>
+      <a href="/citizen-reports.html" class="nav-link">
+        <i data-lucide="megaphone"></i> <span>Citizen Reports</span>
+      </a>
+
+      <div class="nav-section-title">Analytics & Sensors</div>
+      <a href="/reports.html" class="nav-link">
+        <i data-lucide="file-text"></i> <span>Reports</span>
+      </a>
+      <a href="/monitoring-stations.html" class="nav-link">
+        <i data-lucide="cpu"></i> <span>Monitoring Stations</span>
+      </a>
+      <a href="/weather-data.html" class="nav-link">
+        <i data-lucide="wind"></i> <span>Weather Data</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/settings.html" class="nav-link">
+        <i data-lucide="settings"></i> <span>Settings</span>
+      </a>
+      <a href="/profile.html" class="nav-link">
+        <i data-lucide="user"></i> <span>Profile</span>
+      </a>
+      <a href="#" class="nav-link logout-link" id="logout-trigger-btn">
+        <i data-lucide="log-out"></i> <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Viewport -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open Menu">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <div class="location-selector-wrap">
+          <i data-lucide="map-pin"></i>
+          <select id="global-city-select" class="city-select">
+            <option value="Chhatrapati Sambhajinagar">Chhatrapati Sambhajinagar</option>
+            <option value="Pune">Pune</option>
+            <option value="Nashik">Nashik</option>
+            <option value="Nagpur">Nagpur</option>
+          </select>
+        </div>
+
+        <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">
+          --:--:-- IST
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-status-pill">
+          <span class="pulse-dot"></span> SENSOR TELEMETRY OPTIMAL
+        </div>
+
+        <button class="notif-bell-btn" id="notif-bell-btn" title="Emergency Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
+        </button>
+
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-header">
+            <span style="font-family: var(--font-orbitron); font-size: 0.95rem; font-weight: 700; color: #FFF;">
+              Emergency Notifications
+            </span>
+            <button id="mark-all-read-btn" style="background: none; border: none; color: var(--cyan-bright); font-size: 0.78rem; cursor: pointer;">
+              Mark all as read
+            </button>
+          </div>
+          <div class="notif-list" id="notif-list"></div>
+        </div>
+
+        <a href="/profile.html" class="user-profile-pill">
+          <img src="/assets/avatars/officer.png" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'" class="user-avatar-img" id="topbar-avatar-img" alt="Avatar">
+          <div class="user-info-text">
+            <span class="user-name" id="topbar-user-name">Commander Admin</span>
+            <span class="user-role-tag" id="topbar-user-role">AUTHORITY</span>
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <!-- Infrastructure Content Area -->
+    <main class="content-area">
+      <div class="dashboard-greeting-bar animate-fade-in">
+        <div>
+          <h1>Critical Infrastructure Health Matrix</h1>
+          <div class="greeting-subtitle">
+            <i data-lucide="building-2" style="color: var(--cyan-bright);"></i>
+            Sensory Health of Dams, Bridges, Road Corridors & Medical Facilities
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <span class="badge badge-success">2 Normal</span>
+          <span class="badge badge-warning">2 Warning</span>
+          <span class="badge badge-danger">1 At Risk</span>
+        </div>
+      </div>
+
+      <!-- Tabs Bar (Section 17: All, Bridges, Dams, Roads, Hospitals) -->
+      <div class="hud-panel animate-slide-up" style="padding: 14px 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-family: var(--font-rajdhani); font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+              Asset Type:
+            </span>
+            <button class="btn btn-outline infra-type-btn active" data-type="All" style="padding: 6px 14px; font-size: 0.85rem;">
+              All
+            </button>
+            <button class="btn btn-outline infra-type-btn" data-type="Dam" style="padding: 6px 14px; font-size: 0.85rem;">
+              Dams
+            </button>
+            <button class="btn btn-outline infra-type-btn" data-type="Bridge" style="padding: 6px 14px; font-size: 0.85rem;">
+              Bridges
+            </button>
+            <button class="btn btn-outline infra-type-btn" data-type="Road" style="padding: 6px 14px; font-size: 0.85rem;">
+              Roads
+            </button>
+            <button class="btn btn-outline infra-type-btn" data-type="Hospital" style="padding: 6px 14px; font-size: 0.85rem;">
+              Hospitals
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Infrastructure Table (Section 17: Type, Name, Location, Status) -->
+      <div class="hud-panel animate-slide-up" style="padding: 0; overflow: hidden;">
+        <div class="hud-table-wrapper">
+          <table class="hud-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Asset Name & Details</th>
+                <th>Geographical Location</th>
+                <th>Sensors / Water Level</th>
+                <th>Integrity Score</th>
+                <th>Status</th>
+                <th>Inspection</th>
+              </tr>
+            </thead>
+            <tbody id="infra-table-body">
+              <!-- Dynamically rendered -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobile-bottom-nav">
+    <a href="/dashboard.html" class="mobile-bottom-item">
+      <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+    </a>
+    <a href="/radar.html" class="mobile-bottom-item">
+      <i data-lucide="crosshair"></i> <span>Radar</span>
+    </a>
+    <a href="/alerts.html" class="mobile-bottom-item">
+      <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+    </a>
+    <a href="/citizen-reports.html" class="mobile-bottom-item">
+      <i data-lucide="megaphone"></i> <span>Report</span>
+    </a>
+    <a href="/profile.html" class="mobile-bottom-item">
+      <i data-lucide="user"></i> <span>Profile</span>
+    </a>
+  </nav>
+
+  <!-- Logout Modal -->
+  <div class="modal-overlay" id="logout-modal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; color: #FFF;">Confirm Session Termination</h3>
+        <button class="sidebar-toggle-btn" id="logout-cancel-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Are you sure you want to logout of the <b>WORLD MONITOR</b> command terminal?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('logout-modal').classList.remove('active')">
+          Cancel
+        </button>
+        <button class="btn btn-danger" id="logout-confirm-btn">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      let currentType = 'All';
+
+      async function loadInfra() {
+        const tbody = document.getElementById('infra-table-body');
+        if (!tbody) return;
+
+        try {
+          const url = currentType === 'All' ? '/api/infrastructure' : `/api/infrastructure?type=${encodeURIComponent(currentType)}`;
+          const res = await API.get(url);
+          if (res && res.success) {
+            tbody.innerHTML = res.data.map(item => {
+              const statusClass = item.status === 'At Risk' ? 'badge-danger' : (item.status === 'Warning' ? 'badge-warning' : 'badge-success');
+              const iconMap = { 'Dam': 'waves', 'Bridge': 'git-commit', 'Road': 'route', 'Hospital': 'cross' };
+              const iconName = iconMap[item.type] || 'building';
+
+              return `
+                <tr>
+                  <td>
+                    <span class="badge badge-cyan" style="gap: 6px;">
+                      <i data-lucide="${iconName}" style="width: 14px; height: 14px;"></i> ${item.type}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600; color: #FFF;">${item.name}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">${item.sensor_health || 'Sensors Online'}</div>
+                  </td>
+                  <td style="color: var(--text-secondary); font-size: 0.9rem;">${item.location}</td>
+                  <td>
+                    <span style="font-family: var(--font-orbitron); color: var(--cyan-bright); font-weight: 700;">
+                      ${item.current_level} / ${item.max_level} ${item.unit}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="meter-bar-track" style="width: 70px; height: 6px;">
+                        <div class="meter-bar-fill" style="width: ${item.health_score}%; background: ${item.health_score < 60 ? 'var(--danger-crimson)' : 'var(--green-neon)'};"></div>
+                      </div>
+                      <span style="font-size: 0.82rem; font-family: var(--font-orbitron);">${item.health_score}%</span>
+                    </div>
+                  </td>
+                  <td><span class="badge ${statusClass}"><span class="pulse-dot ${item.status === 'At Risk' ? 'danger' : ''}"></span> ${item.status}</span></td>
+                  <td>
+                    <a href="/infrastructure-details.html?id=${item.id}" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem;">
+                      Inspect Live
+                    </a>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+          }
+        } catch (e) {
+          console.warn('Infra load failed:', e);
+        }
+      }
+
+      loadInfra();
+
+      // Bind Tab Buttons
+      const tabBtns = document.querySelectorAll('.infra-type-btn');
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentType = btn.dataset.type || 'All';
+          loadInfra();
+        });
+      });
+    });
+  </script>
+</body>
+</html>

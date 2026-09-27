@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WORLD MONITOR | Real-time • Safe • Together</title>
+  <meta name="description" content="Futuristic Real-Time Disaster Intelligence Command Center & Early Warning System.">
+
+  <!-- Lucide Icons & Fonts -->
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="hero-landing-wrapper">
+
+  <!-- Top Navigation Bar -->
+  <header class="landing-navbar">
+    <a href="/index.html" class="brand-container">
+      <div class="brand-icon-box">
+        <i data-lucide="radio" style="width: 24px; height: 24px;"></i>
+      </div>
+      <div class="brand-text-box">
+        <span class="brand-title">WORLD MONITOR</span>
+        <span class="brand-tagline">Real-time • Safe • Together</span>
+      </div>
+    </a>
+
+    <div class="landing-nav-actions">
+      <a href="/login.html?role=citizen" class="btn btn-outline" style="padding: 8px 16px;">
+        <i data-lucide="user"></i> Citizen Login
+      </a>
+      <a href="/login.html?role=authority" class="btn btn-primary" style="padding: 8px 16px;">
+        <i data-lucide="shield"></i> Authority Login
+      </a>
+      <button class="btn btn-success" id="open-role-modal-btn" style="padding: 8px 16px;">
+        <i data-lucide="user-plus"></i> Create Account
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="landing-hero">
+    <div class="hero-content-box animate-fade-in">
+      <div class="hero-badge-tag">
+        <span class="pulse-dot"></span> EARLY WARNING & COMMAND TELEMETRY ACTIVE
+      </div>
+
+      <h1 class="hero-main-title">
+        WORLD MONITOR
+      </h1>
+
+      <div class="hero-tagline-text">
+        "Real-time • Safe • Together"
+      </div>
+
+      <p class="hero-desc">
+        Real-time intelligence for safer communities. Ultra-high-resolution precipitation radar, river basin flood simulations, live telemetry monitoring, and community hazard reporting engineered for immediate crisis mitigation.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="/dashboard.html" class="btn btn-primary" style="padding: 14px 28px; font-size: 1.1rem;">
+          <i data-lucide="activity"></i> Launch Live Command Center
+        </a>
+        <button class="btn btn-outline" id="hero-create-btn" style="padding: 14px 24px; font-size: 1.05rem;">
+          <i data-lucide="shield-alert"></i> Choose Account Role
+        </button>
+      </div>
+
+      <!-- Live KPI Telemetry Preview Bar -->
+      <div class="hero-stats-bar">
+        <div class="hero-stat-card">
+          <div class="stat-card-val" id="hero-rain-val">120 mm</div>
+          <div class="stat-card-lbl">Kham River Precipitation</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="stat-card-val" style="color: var(--danger-crimson);">5 ACTIVE</div>
+          <div class="stat-card-lbl">Regional Flood Alerts</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="stat-card-val" style="color: var(--green-neon);">94.2%</div>
+          <div class="stat-card-lbl">Protected Citizens Status</div>
+        </div>
+        <div class="hero-stat-card">
+          <div class="stat-card-val" style="color: var(--cyan-bright);">6 STATIONS</div>
+          <div class="stat-card-lbl">Active Telemetry Units</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ROLE SELECTION MODAL (Section 3 Requirement) -->
+  <div class="modal-overlay" id="role-select-modal">
+    <div class="modal-card" style="max-width: 760px;">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 1.3rem;">Create Your Account</h2>
+          <p style="color: var(--text-secondary); font-size: 0.88rem;">Choose your role to continue</p>
+        </div>
+        <button class="sidebar-toggle-btn" id="close-role-modal" style="font-size: 1.2rem;">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="role-cards-container" style="max-width: 100%;">
+          <!-- Citizen Card -->
+          <div class="role-card">
+            <div class="role-icon-box">
+              <i data-lucide="users" style="width: 36px; height: 36px;"></i>
+            </div>
+            <div class="role-title">CITIZEN</div>
+            <p class="role-description">
+              "Stay informed, report issues, track your area and help build a safer community."
+            </p>
+            <a href="/signup.html?role=citizen" class="btn btn-outline" style="width: 100%;">
+              Continue as Citizen
+            </a>
+          </div>
+
+          <!-- Authority Card -->
+          <div class="role-card role-authority">
+            <div class="role-icon-box">
+              <i data-lucide="shield" style="width: 36px; height: 36px;"></i>
+            </div>
+            <div class="role-title" style="color: var(--green-neon);">AUTHORITY</div>
+            <p class="role-description">
+              "Monitor, analyze, respond and manage community safety."
+            </p>
+            <a href="/signup.html?role=authority" class="btn btn-success" style="width: 100%;">
+              Continue as Authority
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+
+      const modal = document.getElementById('role-select-modal');
+      const openBtn1 = document.getElementById('open-role-modal-btn');
+      const openBtn2 = document.getElementById('hero-create-btn');
+      const closeBtn = document.getElementById('close-role-modal');
+
+      function openModal() { modal.classList.add('active'); }
+      function closeModal() { modal.classList.remove('active'); }
+
+      if (openBtn1) openBtn1.addEventListener('click', openModal);
+      if (openBtn2) openBtn2.addEventListener('click', openModal);
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Dashboard | WORLD MONITOR</title>
+  <meta name="description" content="Futuristic Real-Time Disaster Intelligence Command Center & Early Warning Dashboard.">
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Core Styles -->
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body class="app-layout">
+
+  <!-- Mobile Drawer Backdrop -->
+  <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+
+  <!-- Collapsible Sidebar (Section 10 Requirement) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="/dashboard.html" class="brand-container">
+        <div class="brand-icon-box">
+          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-text-box">
+          <span class="brand-title">WORLD MONITOR</span>
+          <span class="brand-tagline">Real-time • Safe • Together</span>
+        </div>
+      </a>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">
+        <i data-lucide="panel-left-close"></i>
+      </button>
+    </div>
+
+    <!-- Navigation List (All 11 Core Pages) -->
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Telemetry & Radar</div>
+      <a href="/dashboard.html" class="nav-link active">
+        <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+      </a>
+      <a href="/radar.html" class="nav-link">
+        <i data-lucide="crosshair"></i> <span>Live Radar</span>
+      </a>
+      <a href="/nowcast.html" class="nav-link">
+        <i data-lucide="cloud-lightning"></i> <span>Nowcast</span>
+      </a>
+      <a href="/flood-map.html" class="nav-link">
+        <i data-lucide="waves"></i> <span>Flood Map</span>
+      </a>
+
+      <div class="nav-section-title">Emergency Response</div>
+      <a href="/alerts.html" class="nav-link">
+        <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+      </a>
+      <a href="/safe-routes.html" class="nav-link">
+        <i data-lucide="map-pin"></i> <span>Safe Routes</span>
+      </a>
+      <a href="/infrastructure.html" class="nav-link">
+        <i data-lucide="building-2"></i> <span>Infrastructure</span>
+      </a>
+      <a href="/citizen-reports.html" class="nav-link">
+        <i data-lucide="megaphone"></i> <span>Citizen Reports</span>
+      </a>
+
+      <div class="nav-section-title">Analytics & Sensors</div>
+      <a href="/reports.html" class="nav-link">
+        <i data-lucide="file-text"></i> <span>Reports</span>
+      </a>
+      <a href="/monitoring-stations.html" class="nav-link">
+        <i data-lucide="cpu"></i> <span>Monitoring Stations</span>
+      </a>
+      <a href="/weather-data.html" class="nav-link">
+        <i data-lucide="wind"></i> <span>Weather Data</span>
+      </a>
+    </nav>
+
+    <!-- Bottom Controls -->
+    <div class="sidebar-footer">
+      <a href="/settings.html" class="nav-link">
+        <i data-lucide="settings"></i> <span>Settings</span>
+      </a>
+      <a href="/profile.html" class="nav-link">
+        <i data-lucide="user"></i> <span>Profile</span>
+      </a>
+      <a href="#" class="nav-link logout-link" id="logout-trigger-btn">
+        <i data-lucide="log-out"></i> <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Viewport -->
+  <div class="main-wrapper">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open Menu">
+          <i data-lucide="menu"></i>
+        </button>
+
+        <div class="location-selector-wrap">
+          <i data-lucide="map-pin"></i>
+          <select id="global-city-select" class="city-select" title="Select Monitoring City">
+            <option value="Chhatrapati Sambhajinagar">Chhatrapati Sambhajinagar</option>
+            <option value="Pune">Pune</option>
+            <option value="Nashik">Nashik</option>
+            <option value="Nagpur">Nagpur</option>
+          </select>
+        </div>
+
+        <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">
+          --:--:-- IST
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-status-pill">
+          <span class="pulse-dot"></span> LIVE FEED ACTIVE
+        </div>
+
+        <!-- Notification Bell -->
+        <button class="notif-bell-btn" id="notif-bell-btn" title="Emergency Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
+        </button>
+
+        <!-- Notification Panel Dropdown -->
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-header">
+            <span style="font-family: var(--font-orbitron); font-size: 0.95rem; font-weight: 700; color: #FFF;">
+              Emergency Notifications
+            </span>
+            <button id="mark-all-read-btn" style="background: none; border: none; color: var(--cyan-bright); font-size: 0.78rem; cursor: pointer;">
+              Mark all as read
+            </button>
+          </div>
+          <div class="notif-list" id="notif-list">
+            <!-- Populated via notifications.js -->
+          </div>
+        </div>
+
+        <!-- Profile Pill -->
+        <a href="/profile.html" class="user-profile-pill">
+          <img src="/assets/avatars/officer.png" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'" class="user-avatar-img" id="topbar-avatar-img" alt="Avatar">
+          <div class="user-info-text">
+            <span class="user-name" id="topbar-user-name">Commander Admin</span>
+            <span class="user-role-tag" id="topbar-user-role">AUTHORITY</span>
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+      <!-- Greeting and Sector Bar (Section 11) -->
+      <div class="dashboard-greeting-bar animate-fade-in">
+        <div class="greeting-title-wrap">
+          <h1 id="dashboard-greeting">Welcome, Commander / Citizen</h1>
+          <div class="greeting-subtitle">
+            <i data-lucide="radar" style="color: var(--cyan-bright); width: 16px; height: 16px;"></i>
+            Regional Sector: <b id="dashboard-location-title" style="color: #FFF;">Chhatrapati Sambhajinagar</b>
+            • State: Maharashtra • Grid: S-Band Doppler 3.2GHz
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <a href="/alerts.html" class="btn btn-danger">
+            <i data-lucide="alert-octagon"></i> Active Warnings: <span id="dashboard-active-warnings-count">3</span>
+          </a>
+          <a href="/citizen-reports.html" class="btn btn-primary">
+            <i data-lucide="plus-circle"></i> New Incident Report
+          </a>
+        </div>
+      </div>
+
+      <!-- Weather Cards HUD Grid (Section 11 Specification) -->
+      <section class="weather-kpi-grid animate-slide-up">
+        <!-- Rainfall -->
+        <div class="kpi-card kpi-danger">
+          <div class="kpi-data">
+            <span class="kpi-label">Rainfall (Catchment)</span>
+            <span class="kpi-value" id="kpi-rainfall">120 mm</span>
+            <span class="kpi-meta" style="color: var(--danger-crimson);">Cloudburst Threshold Exceeded</span>
+          </div>
+          <div class="kpi-icon-wrap" style="color: var(--danger-crimson); border-color: rgba(255, 51, 102, 0.4);">
+            <i data-lucide="cloud-rain"></i>
+          </div>
+        </div>
+
+        <!-- Temperature -->
+        <div class="kpi-card">
+          <div class="kpi-data">
+            <span class="kpi-label">Temperature</span>
+            <span class="kpi-value" id="kpi-temp">25°C</span>
+            <span class="kpi-meta">Dew Point: 23.8°C</span>
+          </div>
+          <div class="kpi-icon-wrap">
+            <i data-lucide="thermometer"></i>
+          </div>
+        </div>
+
+        <!-- Humidity -->
+        <div class="kpi-card kpi-warning">
+          <div class="kpi-data">
+            <span class="kpi-label">Humidity</span>
+            <span class="kpi-value" id="kpi-humidity">92%</span>
+            <span class="kpi-meta" style="color: var(--warning-amber);">Near Vapor Saturation</span>
+          </div>
+          <div class="kpi-icon-wrap" style="color: var(--warning-amber); border-color: rgba(255, 176, 32, 0.4);">
+            <i data-lucide="droplets"></i>
+          </div>
+        </div>
+
+        <!-- Wind -->
+        <div class="kpi-card">
+          <div class="kpi-data">
+            <span class="kpi-label">Wind Velocity</span>
+            <span class="kpi-value" id="kpi-wind">35 km/h</span>
+            <span class="kpi-meta">Direction: NW Gusts 48 km/h</span>
+          </div>
+          <div class="kpi-icon-wrap">
+            <i data-lucide="wind"></i>
+          </div>
+        </div>
+
+        <!-- Pressure -->
+        <div class="kpi-card kpi-danger">
+          <div class="kpi-data">
+            <span class="kpi-label">Barometric Pressure</span>
+            <span class="kpi-value" id="kpi-pressure">995 hPa</span>
+            <span class="kpi-meta" style="color: var(--danger-crimson);">Severe Low Depression Trough</span>
+          </div>
+          <div class="kpi-icon-wrap" style="color: var(--danger-crimson); border-color: rgba(255, 51, 102, 0.4);">
+            <i data-lucide="gauge"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Dual Column Grid -->
+      <div class="dashboard-main-grid">
+        <!-- Left Core Column -->
+        <div class="dashboard-column">
+          <!-- Mini Live Radar / Map Preview -->
+          <div class="hud-panel animate-fade-in">
+            <div class="hud-panel-header">
+              <div class="hud-panel-title">
+                <i data-lucide="map" style="color: var(--cyan-bright);"></i>
+                Sector Radar & Flood Plain Hotspots
+              </div>
+              <a href="/radar.html" class="btn btn-outline" style="padding: 4px 12px; font-size: 0.8rem;">
+                <i data-lucide="maximize-2"></i> Fullscreen Radar
+              </a>
+            </div>
+            <div id="mini-dashboard-map" class="leaflet-map-wrapper"></div>
+          </div>
+
+          <!-- Recent Alerts Feed (Section 11) -->
+          <div class="hud-panel animate-fade-in">
+            <div class="hud-panel-header">
+              <div class="hud-panel-title">
+                <i data-lucide="siren" style="color: var(--danger-crimson);"></i>
+                Recent Emergency Broadcasts & Alerts
+              </div>
+              <a href="/alerts.html" class="btn btn-outline" style="padding: 4px 12px; font-size: 0.8rem;">
+                View All Alerts
+              </a>
+            </div>
+            <div id="dashboard-alerts-list">
+              <!-- Dynamically populated via dashboard.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Auxiliary Column -->
+        <div class="dashboard-column">
+          <!-- Evacuation & Protected Citizens Meter -->
+          <div class="hud-panel">
+            <div class="hud-panel-header">
+              <div class="hud-panel-title">
+                <i data-lucide="shield-check" style="color: var(--green-neon);"></i>
+                Protected Sector Status
+              </div>
+              <span class="badge badge-success">94.2% Safe</span>
+            </div>
+            <div class="evac-meter-wrap">
+              <div class="meter-header">
+                <span>Civilian Evacuation Progress</span>
+                <span style="color: var(--green-neon);">94.2% Complete</span>
+              </div>
+              <div class="meter-bar-track">
+                <div class="meter-bar-fill" style="width: 94.2%;"></div>
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px;">
+                2,450 evacuated to Garkheda Sports Shelter. 180 in Cidco Community Center.
+              </div>
+            </div>
+          </div>
+
+          <!-- High Risk Areas List (Section 11) -->
+          <div class="hud-panel">
+            <div class="hud-panel-header">
+              <div class="hud-panel-title">
+                <i data-lucide="flame" style="color: var(--warning-amber);"></i>
+                High Risk Inundation Zones
+              </div>
+              <a href="/flood-map.html" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
+                Flood Map
+              </a>
+            </div>
+            <div id="dashboard-risk-areas">
+              <!-- Dynamically populated via dashboard.js -->
+            </div>
+          </div>
+
+          <!-- Citizen Reports Status Counter -->
+          <div class="hud-panel">
+            <div class="hud-panel-header">
+              <div class="hud-panel-title">
+                <i data-lucide="clipboard-list" style="color: var(--cyan-bright);"></i>
+                Field Incident Reports
+              </div>
+              <a href="/citizen-reports.html" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">
+                Manage
+              </a>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+              <div style="background: rgba(255, 51, 102, 0.1); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: var(--radius-sm); padding: 12px 6px;">
+                <div style="font-family: var(--font-orbitron); font-size: 1.4rem; color: var(--danger-crimson);" id="stat-reports-pending">1</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Pending</div>
+              </div>
+              <div style="background: rgba(255, 176, 32, 0.1); border: 1px solid rgba(255, 176, 32, 0.3); border-radius: var(--radius-sm); padding: 12px 6px;">
+                <div style="font-family: var(--font-orbitron); font-size: 1.4rem; color: var(--warning-amber);" id="stat-reports-progress">1</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">In Progress</div>
+              </div>
+              <div style="background: rgba(0, 255, 163, 0.1); border: 1px solid rgba(0, 255, 163, 0.3); border-radius: var(--radius-sm); padding: 12px 6px;">
+                <div style="font-family: var(--font-orbitron); font-size: 1.4rem; color: var(--green-neon);" id="stat-reports-resolved">1</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Resolved</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar (Section 41) -->
+  <nav class="mobile-bottom-nav">
+    <a href="/dashboard.html" class="mobile-bottom-item active">
+      <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+    </a>
+    <a href="/radar.html" class="mobile-bottom-item">
+      <i data-lucide="crosshair"></i> <span>Radar</span>
+    </a>
+    <a href="/alerts.html" class="mobile-bottom-item">
+      <i data-lucide="alert-triangle"></i> <span>Alerts</span>
+    </a>
+    <a href="/citizen-reports.html" class="mobile-bottom-item">
+      <i data-lucide="megaphone"></i> <span>Report</span>
+    </a>
+    <a href="/profile.html" class="mobile-bottom-item">
+      <i data-lucide="user"></i> <span>Profile</span>
+    </a>
+  </nav>
+
+  <!-- Logout Confirmation Modal (Section 25) -->
+  <div class="modal-overlay" id="logout-modal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; color: #FFF;">Confirm Session Termination</h3>
+        <button class="sidebar-toggle-btn" id="logout-cancel-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+          Are you sure you want to logout of the <b>WORLD MONITOR</b> command terminal?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('logout-modal').classList.remove('active')">
+          Cancel
+        </button>
+        <button class="btn btn-danger" id="logout-confirm-btn">
+          <i data-lucide="log-out"></i> Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

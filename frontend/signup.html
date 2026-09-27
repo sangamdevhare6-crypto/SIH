@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | WORLD MONITOR</title>
+  <meta name="description" content="Register as a Citizen or Disaster Management Authority on World Monitor.">
+
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/auth.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="auth-page-wrapper">
+
+  <div class="auth-card-panel animate-fade-in" style="max-width: 540px;">
+    <div class="auth-header">
+      <a href="/index.html" class="auth-brand-logo">
+        <div class="brand-icon-box">
+          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
+        </div>
+        <span class="brand-title" style="font-size: 1.25rem;">WORLD MONITOR</span>
+      </a>
+      <h1 class="auth-title" id="signup-title">Create Account</h1>
+      <p class="auth-subtitle" id="signup-subtitle">Choose your role to continue</p>
+    </div>
+
+    <!-- Role Switcher Tabs -->
+    <div class="auth-role-tabs">
+      <button class="role-tab-btn active" id="tab-citizen" type="button">
+        <i data-lucide="user" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i> Citizen
+      </button>
+      <button class="role-tab-btn" id="tab-authority" type="button">
+        <i data-lucide="shield" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i> Authority
+      </button>
+    </div>
+
+    <!-- 1. CITIZEN SIGNUP FORM -->
+    <form id="citizen-signup-form">
+      <div class="form-group">
+        <label class="form-label" for="citizen-name">Full Name *</label>
+        <input type="text" id="citizen-name" class="form-input" placeholder="e.g. Ramesh Patil" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="citizen-email">Email Address *</label>
+        <input type="email" id="citizen-email" class="form-input" placeholder="name@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="citizen-phone">Phone Number *</label>
+        <input type="tel" id="citizen-phone" class="form-input" placeholder="+91 98765 43210" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="citizen-pass">Password *</label>
+        <input type="password" id="citizen-pass" class="form-input" placeholder="At least 6 characters" minlength="6" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="citizen-conf-pass">Confirm Password *</label>
+        <input type="password" id="citizen-conf-pass" class="form-input" placeholder="Re-enter password" minlength="6" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">
+        <i data-lucide="user-check"></i> Complete Citizen Registration
+      </button>
+    </form>
+
+    <!-- 2. AUTHORITY SIGNUP FORM -->
+    <form id="authority-signup-form" style="display: none;">
+      <div class="form-group">
+        <label class="form-label" for="auth-name">Full Name *</label>
+        <input type="text" id="auth-name" class="form-input" placeholder="e.g. Capt. Vikram Shinde" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="auth-email">Official Email Address *</label>
+        <input type="email" id="auth-email" class="form-input" placeholder="officer@disaster.gov.in" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label" for="auth-dept">Department / Org *</label>
+          <input type="text" id="auth-dept" class="form-input" placeholder="e.g. SDMA / Municipal Corp" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="auth-desig">Designation *</label>
+          <input type="text" id="auth-desig" class="form-input" placeholder="e.g. Chief Relief Officer" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="auth-phone">Phone Number *</label>
+        <input type="tel" id="auth-phone" class="form-input" placeholder="+91 94220 12345" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="auth-pass">Password (Min 8 Characters) *</label>
+        <input type="password" id="auth-pass" class="form-input" placeholder="At least 8 characters" minlength="8" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="auth-conf-pass">Confirm Password *</label>
+        <input type="password" id="auth-conf-pass" class="form-input" placeholder="Re-enter password" minlength="8" required>
+      </div>
+
+      <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px; margin-top: 8px;">
+        <i data-lucide="shield-check"></i> Register Authority Command Account
+      </button>
+    </form>
+
+    <div class="auth-divider">Or</div>
+
+    <div class="auth-footer-links">
+      Already have an account? <a href="/login.html"><b>Login to Portal</b></a>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+
+      const params = new URLSearchParams(window.location.search);
+      let role = (params.get('role') || 'citizen').toUpperCase();
+
+      const tabCitizen = document.getElementById('tab-citizen');
+      const tabAuthority = document.getElementById('tab-authority');
+      const citizenForm = document.getElementById('citizen-signup-form');
+      const authForm = document.getElementById('authority-signup-form');
+      const title = document.getElementById('signup-title');
+      const subtitle = document.getElementById('signup-subtitle');
+
+      function switchRole(r) {
+        role = r;
+        if (role === 'AUTHORITY') {
+          tabAuthority.classList.add('active');
+          tabCitizen.classList.remove('active');
+          authForm.style.display = 'block';
+          citizenForm.style.display = 'none';
+          title.textContent = 'Authority Registration';
+          subtitle.textContent = 'Official Command Center & Disaster Response Credentials';
+        } else {
+          tabCitizen.classList.add('active');
+          tabAuthority.classList.remove('active');
+          citizenForm.style.display = 'block';
+          authForm.style.display = 'none';
+          title.textContent = 'Citizen Registration';
+          subtitle.textContent = 'Stay informed, track threats, and report local incidents';
+        }
+      }
+
+      switchRole(role);
+
+      tabCitizen.addEventListener('click', () => switchRole('CITIZEN'));
+      tabAuthority.addEventListener('click', () => switchRole('AUTHORITY'));
+
+      // Citizen Submit
+      citizenForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pass = document.getElementById('citizen-pass').value;
+        const confPass = document.getElementById('citizen-conf-pass').value;
+        if (pass !== confPass) {
+          alert('Passwords do not match');
+          return;
+        }
+
+        const payload = {
+          full_name: document.getElementById('citizen-name').value.trim(),
+          email: document.getElementById('citizen-email').value.trim(),
+          phone: document.getElementById('citizen-phone').value.trim(),
+          password: pass,
+          confirm_password: confPass
+        };
+
+        const res = await Auth.registerCitizen(payload);
+        if (res.success) {
+          window.location.href = '/dashboard.html';
+        } else {
+          alert('Registration Error: ' + res.error);
+        }
+      });
+
+      // Authority Submit
+      authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pass = document.getElementById('auth-pass').value;
+        const confPass = document.getElementById('auth-conf-pass').value;
+        if (pass !== confPass) {
+          alert('Passwords do not match');
+          return;
+        }
+
+        const payload = {
+          full_name: document.getElementById('auth-name').value.trim(),
+          email: document.getElementById('auth-email').value.trim(),
+          department: document.getElementById('auth-dept').value.trim(),
+          designation: document.getElementById('auth-desig').value.trim(),
+          phone: document.getElementById('auth-phone').value.trim(),
+          password: pass,
+          confirm_password: confPass
+        };
+
+        const res = await Auth.registerAuthority(payload);
+        if (res.success) {
+          window.location.href = '/dashboard.html';
+        } else {
+          alert('Registration Error: ' + res.error);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
