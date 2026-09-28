@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>WORLD MONITOR — Admin Dashboard</title>
+
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+  >
+
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&display=swap"
+  >
+
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+
+
+<body class="admin-page">
+
+  <div class="admin-shell">
+
+    <!-- SIDEBAR -->
+
+    <aside class="admin-sidebar">
+
+      <div class="brand">
+
+        <span class="brand-dot"></span>
+
+        <div>
+          <strong>WORLD MONITOR</strong>
+          <small>ADMIN COMMAND</small>
+        </div>
+
+      </div>
+
+
+      <nav>
+
+        <a
+          class="active"
+          href="/admin.html"
+        >
+          Overview
+        </a>
+
+        <a href="#users">
+          Registered Users
+        </a>
+
+        <a href="/dashboard.html">
+          Main Dashboard
+        </a>
+
+      </nav>
+
+
+      <button
+        id="logoutBtn"
+        class="logout-btn"
+      >
+        Logout
+      </button>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="admin-main">
+
+      <header class="admin-header">
+
+        <div>
+
+          <p class="eyebrow">
+            SECURE ADMIN AREA
+          </p>
+
+          <h1>
+            User Management
+          </h1>
+
+          <p class="muted">
+            Monitor accounts created on the WORLD MONITOR platform.
+          </p>
+
+        </div>
+
+
+        <button
+          id="refreshBtn"
+          class="refresh-btn"
+        >
+          ↻ Refresh
+        </button>
+
+      </header>
+
+
+
+      <!-- STATISTICS -->
+
+      <section
+        class="stats-grid"
+        aria-label="User statistics"
+      >
+
+        <article class="stat-card">
+
+          <span>
+            Total Accounts
+          </span>
+
+          <strong id="totalUsers">
+            —
+          </strong>
+
+          <small>
+            All registered accounts
+          </small>
+
+        </article>
+
+
+        <article class="stat-card">
+
+          <span>
+            Active Accounts
+          </span>
+
+          <strong id="activeUsers">
+            —
+          </strong>
+
+          <small>
+            Currently active
+          </small>
+
+        </article>
+
+
+        <article class="stat-card">
+
+          <span>
+            Citizens
+          </span>
+
+          <strong id="citizens">
+            —
+          </strong>
+
+          <small>
+            Citizen registrations
+          </small>
+
+        </article>
+
+
+        <article class="stat-card">
+
+          <span>
+            Authorities
+          </span>
+
+          <strong id="authorities">
+            —
+          </strong>
+
+          <small>
+            Authority accounts
+          </small>
+
+        </article>
+
+      </section>
+
+
+
+      <!-- USERS -->
+
+      <section
+        class="panel"
+        id="users"
+      >
+
+        <div class="panel-head">
+
+          <div>
+
+            <h2>
+              Registered Users
+            </h2>
+
+            <p>
+              Latest accounts created on the platform.
+            </p>
+
+          </div>
+
+
+          <span
+            id="statusText"
+            class="status-pill"
+          >
+            Loading…
+          </span>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+
+            </thead>
+
+
+            <tbody id="usersBody">
+
+              <tr>
+                <td
+                  colspan="6"
+                  class="empty"
+                >
+                  Loading users…
+                </td>
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin.js"></script>
+
+</body>
+
+</html>

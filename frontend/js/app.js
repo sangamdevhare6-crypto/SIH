@@ -119,19 +119,182 @@ const App = {
     setInterval(update, 1000);
   },
 
-  setupLocationSelector() {
+ setupLocationSelector() {
     const citySelect = document.getElementById('global-city-select');
-    if (!citySelect) return;
+    const searchInput = document.getElementById('city-search-input');
+    const searchBtn = document.getElementById('city-search-btn');
 
-    citySelect.value = this.selectedCity;
-    citySelect.addEventListener('change', (e) => {
-      this.selectedCity = e.target.value;
-      localStorage.setItem('wm_selected_city', this.selectedCity);
-      window.showToast(`Monitoring Region Switched: ${this.selectedCity}`, 'info');
-      // Dispatch event to page controllers
-      window.dispatchEvent(new CustomEvent('wm:city_changed', { detail: { city: this.selectedCity } }));
-    });
-  },
+    // ==============================
+    // DROPDOWN CITY
+    // ==============================
+    if (citySelect) {
+        citySelect.value = this.selectedCity;
+
+        citySelect.addEventListener('change', (e) => {
+            const city = e.target.value.trim();
+
+            if (!city) return;
+
+            this.changeCity(city);
+
+            // Search box bhi update karo
+            if (searchInput) {
+                searchInput.value = '';
+            }
+        });
+    }
+
+    // ==============================
+    // SEARCH BUTTON
+    // ==============================
+    if (searchBtn && searchInput) {
+        searchBtn.addEventListener('click', () => {
+            this.searchCity();
+        });
+
+        // ENTER PRESS
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.searchCity();
+            }
+        });
+    }
+},
+
+
+async searchCity() {
+    const searchInput =
+        document.getElementById('city-search-input');
+
+    const city = searchInput?.value.trim();
+
+    if (!city) {
+        window.showToast(
+            'Please enter a city name',
+            'danger'
+        );
+        return;
+    }
+
+    try {
+        window.showToast(
+            `Searching weather for ${city}...`,
+            'info'
+        );
+
+        /*
+         * IMPORTANT:
+         * Backend will detect the actual city
+         * using OpenWeather Geocoding API.
+         */
+        const response = await API.get(
+            `/api/weather?city=${encodeURIComponent(city)}`
+        );
+
+        if (
+            !response ||
+            !response.success ||
+            !response.data
+        ) {
+            throw new Error(
+                'City not found'
+            );
+        }
+
+        // Backend se actual detected city
+        const detectedCity =
+            response.data.city || city;
+
+        // Save detected city
+        this.selectedCity = detectedCity;
+
+        localStorage.setItem(
+            'wm_selected_city',
+            detectedCity
+        );
+
+        // Dropdown me city available hai to select karo
+        const citySelect =
+            document.getElementById(
+                'global-city-select'
+            );
+
+        if (citySelect) {
+            const matchingOption =
+                Array.from(citySelect.options)
+                    .find(
+                        option =>
+                            option.value.toLowerCase() ===
+                            detectedCity.toLowerCase()
+                    );
+
+            if (matchingOption) {
+                citySelect.value =
+                    matchingOption.value;
+            }
+        }
+
+        // Clear search
+        searchInput.value = '';
+
+        // Weather page ko city change batao
+        window.dispatchEvent(
+            new CustomEvent(
+                'wm:city_changed',
+                {
+                    detail: {
+                        city: detectedCity
+                    }
+                }
+            )
+        );
+
+        window.showToast(
+            `Weather loaded: ${detectedCity}`,
+            'success'
+        );
+
+    } catch (error) {
+
+        console.error(
+            'City search failed:',
+            error
+        );
+
+        window.showToast(
+            `City "${city}" not found`,
+            'danger'
+        );
+    }
+},
+
+
+changeCity(city) {
+
+    this.selectedCity = city;
+
+    localStorage.setItem(
+        'wm_selected_city',
+        city
+    );
+
+    window.showToast(
+        `Monitoring Region Switched: ${city}`,
+        'info'
+    );
+
+    window.dispatchEvent(
+        new CustomEvent(
+            'wm:city_changed',
+            {
+                detail: {
+                    city: city
+                }
+            }
+        )
+    );
+},
 
   setupLogoutModal() {
     const logoutBtn = document.getElementById('logout-trigger-btn');

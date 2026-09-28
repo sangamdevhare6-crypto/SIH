@@ -223,3 +223,109 @@ const WeatherApp = {
 };
 
 window.WeatherApp = WeatherApp;
+
+class WeatherManager {
+
+    constructor() {
+        this.apiUrl = '/api/weather/current';
+    }
+
+    async getWeatherByLocation(lat, lon) {
+
+        try {
+
+            const response = await fetch(
+                `${this.apiUrl}?lat=${lat}&lon=${lon}`
+            );
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Weather request failed');
+            }
+
+            return result.data;
+
+        } catch (error) {
+
+            console.error('Weather Error:', error);
+
+            throw error;
+        }
+    }
+
+    async getWeatherByCity(city) {
+
+        try {
+
+            const response = await fetch(
+                `${this.apiUrl}?city=${encodeURIComponent(city)}`
+            );
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Weather request failed');
+            }
+
+            return result.data;
+
+        } catch (error) {
+
+            console.error('Weather Error:', error);
+
+            throw error;
+        }
+    }
+
+    async detectUserWeather() {
+
+        return new Promise((resolve, reject) => {
+
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported'));
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+
+                    try {
+
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        console.log('Detected Location:', lat, lon);
+
+                        const weather =
+                            await this.getWeatherByLocation(lat, lon);
+
+                        resolve(weather);
+
+                    } catch (error) {
+                        reject(error);
+                    }
+                },
+
+                (error) => {
+
+                    console.error('Location Error:', error);
+
+                    reject(
+                        new Error(
+                            'Location permission was denied or unavailable'
+                        )
+                    );
+                },
+
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000
+                }
+            );
+        });
+    }
+}
+
+const weatherManager = new WeatherManager();

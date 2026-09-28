@@ -1,211 +1,1929 @@
 /* ============================================================
    WORLD MONITOR - LIVE RADAR & SATELLITE CONTROLLER
-   Matches Section 12 Specification
+   ============================================================
+   Features:
+   - Live Tomorrow.io precipitation radar
+   - Dark OpenStreetMap basemap
+   - Satellite basemap
+   - Storm cell visualization
+   - Lightning visualization
+   - Intensity filters
+   - Play / Pause timeline
+   - Radar timeline
+   - Automatic radar refresh
+   - Leaflet resize protection
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
-  RadarApp.init();
+    RadarApp.init();
 });
 
+
 const RadarApp = {
-  map: null,
-  radarLayerGroup: null,
-  lightningLayerGroup: null,
-  windLayerGroup: null,
-  currentMode: 'radar', // 'radar' or 'satellite'
-  activeFilter: 'all', // 'Light', 'Moderate', 'Heavy', 'Extreme'
-  isPlaying: true,
-  currentFrameIndex: 4,
-  playbackInterval: null,
-  radarData: null,
 
-  async init() {
-    await this.fetchRadarData();
-    this.initMap();
-    this.bindControls();
-    this.startAnimationLoop();
-  },
+    /* ==========================================================
+       MAP
+       ========================================================== */
 
-  async fetchRadarData() {
-    try {
-      const res = await API.get('/api/weather/radar');
-      if (res && res.success) {
-        this.radarData = res.data;
-      }
-    } catch (e) {
-      console.warn('Could not fetch radar metadata:', e);
-    }
-  },
+    map: null,
 
-  initMap() {
-    const mapEl = document.getElementById('radar-map');
-    if (!mapEl || !window.L) return;
+    darkTileLayer: null,
 
-    this.map = L.map('radar-map', {
-      zoomControl: true
-    }).setView([19.8762, 75.3433], 9);
+    satelliteTileLayer: null,
 
-    // Dark Basemap
-    this.darkTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 18,
-      attribution: '© OpenStreetMap contributors, © CARTO'
-    }).addTo(this.map);
+    // LIVE RADAR TILE LAYER
+    liveRadarLayer: null,
 
-    // Satellite Basemap layer (Esri World Imagery)
-    this.satelliteTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 18,
-      attribution: 'Tiles © Esri'
-    });
+    // Existing data layers
+    radarLayerGroup: null,
 
-    this.radarLayerGroup = L.layerGroup().addTo(this.map);
-    this.lightningLayerGroup = L.layerGroup().addTo(this.map);
-    this.windLayerGroup = L.layerGroup().addTo(this.map);
+    lightningLayerGroup: null,
 
-    this.renderStormCells();
-    this.renderLightning();
-  },
+    windLayerGroup: null,
 
-  renderStormCells() {
-    this.radarLayerGroup.clearLayers();
-    if (!this.radarData || !this.radarData.stormCells) return;
 
-    const colors = {
-      'Light': '#00F5FF',
-      'Moderate': '#00FFA3',
-      'Heavy': '#FFB020',
-      'Extreme': '#FF3366'
-    };
+    /* ==========================================================
+       STATE
+       ========================================================== */
 
-    this.radarData.stormCells.forEach(cell => {
-      if (this.activeFilter !== 'all' && cell.intensity.toLowerCase() !== this.activeFilter.toLowerCase()) {
-        return;
-      }
+    currentMode: 'radar',
 
-      const color = colors[cell.intensity] || '#00D9FF';
+    activeFilter: 'all',
 
-      // Outer storm cloud perimeter
-      L.circle([cell.lat, cell.lng], {
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.28,
-        weight: 2,
-        radius: cell.radius
-      }).addTo(this.radarLayerGroup).bindPopup(`
-        <div style="color: #000; font-family: sans-serif;">
-          <h4 style="margin: 0 0 4px; color: ${color};">${cell.name}</h4>
-          <p style="margin: 2px 0;"><b>Intensity:</b> ${cell.intensity} (${cell.dbz} dBZ)</p>
-          <p style="margin: 2px 0;"><b>Speed:</b> ${cell.speed} (${cell.direction})</p>
-          <p style="margin: 2px 0;"><b>Lightning Rate:</b> ${cell.lightningRate}</p>
-        </div>
-      `);
+    isPlaying: true,
 
-      // Inner dense core
-      L.circle([cell.lat, cell.lng], {
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.6,
-        weight: 1,
-        radius: cell.radius * 0.45
-      }).addTo(this.radarLayerGroup);
-    });
-  },
+    currentFrameIndex: 4,
 
-  renderLightning() {
-    this.lightningLayerGroup.clearLayers();
-    if (!this.radarData || !this.radarData.lightningStrikes) return;
+    playbackInterval: null,
 
-    this.radarData.lightningStrikes.forEach(strike => {
-      const strikeIcon = L.divIcon({
-        className: 'lightning-marker',
-        html: `<div style="color: #FFE600; font-size: 22px; filter: drop-shadow(0 0 8px #FFE600);"><i data-lucide="zap">⚡</i></div>`,
-        iconSize: [20, 20]
-      });
+    radarRefreshInterval: null,
 
-      L.marker([strike.lat, strike.lng], { icon: strikeIcon })
-        .addTo(this.lightningLayerGroup)
-        .bindPopup(`<b>Lightning Strike Detected</b><br>Age: ${strike.ageSec}s ago<br>Polarity: ${strike.polarity}`);
-    });
-  },
+    radarData: null,
 
-  bindControls() {
-    // Mode switcher (Radar vs Satellite)
-    const radarTab = document.getElementById('tab-mode-radar');
-    const satelliteTab = document.getElementById('tab-mode-satellite');
+    mapResizeObserver: null,
 
-    if (radarTab && satelliteTab) {
-      radarTab.addEventListener('click', () => {
-        radarTab.classList.add('active');
-        satelliteTab.classList.remove('active');
-        this.setMode('radar');
-      });
 
-      satelliteTab.addEventListener('click', () => {
-        satelliteTab.classList.add('active');
-        radarTab.classList.remove('active');
-        this.setMode('satellite');
-      });
-    }
+    /* ==========================================================
+       INIT
+       ========================================================== */
 
-    // Intensity Filter Buttons (Light, Moderate, Heavy, Extreme)
-    const filterBtns = document.querySelectorAll('.radar-filter-btn');
-    filterBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        filterBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.activeFilter = btn.dataset.filter || 'all';
+    async init() {
+
+        console.log('WORLD MONITOR RADAR: Initializing...');
+
+        // Check Leaflet
+        if (!window.L) {
+            console.error(
+                'WORLD MONITOR RADAR: Leaflet.js is not loaded.'
+            );
+            return;
+        }
+
+        // Check API
+        if (!window.API) {
+            console.error(
+                'WORLD MONITOR RADAR: API object is not available.'
+            );
+        }
+
+        // Fetch metadata first
+        await this.fetchRadarData();
+
+        // Initialize map
+        this.initMap();
+
+        // Bind buttons and controls
+        this.bindControls();
+
+        // Start timeline animation
+        this.startAnimationLoop();
+
+        // Start live radar refresh
+        this.startLiveRadarRefresh();
+
+        // Fix Leaflet size after page layout is ready
+        this.setupMapResizeObserver();
+
+        setTimeout(() => {
+            this.invalidateMapSize();
+        }, 300);
+
+        setTimeout(() => {
+            this.invalidateMapSize();
+        }, 1000);
+
+        console.log(
+            'WORLD MONITOR RADAR: Initialization complete.'
+        );
+    },
+
+
+    /* ==========================================================
+       FETCH RADAR METADATA
+       ========================================================== */
+
+    async fetchRadarData() {
+
+        try {
+
+            if (!window.API) {
+                console.warn(
+                    'Radar metadata skipped: API object missing.'
+                );
+                return;
+            }
+
+            const res =
+                await API.get('/api/weather/radar');
+
+            if (
+                res &&
+                res.success &&
+                res.data
+            ) {
+
+                this.radarData = res.data;
+
+                console.log(
+                    'Radar metadata loaded:',
+                    this.radarData
+                );
+
+            } else {
+
+                console.warn(
+                    'Radar metadata response was empty.'
+                );
+
+            }
+
+        } catch (error) {
+
+            console.warn(
+                'Could not fetch radar metadata:',
+                error
+            );
+
+            /*
+             * IMPORTANT:
+             * Metadata failure should NOT prevent
+             * the actual Leaflet map from loading.
+             */
+
+            this.radarData = {
+                frames: []
+            };
+        }
+    },
+
+
+    /* ==========================================================
+       MAP INITIALIZATION
+       ========================================================== */
+
+    initMap() {
+
+        const mapEl =
+            document.getElementById('radar-map');
+
+
+        /* ------------------------------------------------------
+           VALIDATION
+           ------------------------------------------------------ */
+
+        if (!mapEl) {
+
+            console.error(
+                'Radar map element #radar-map not found.'
+            );
+
+            return;
+        }
+
+
+        if (!window.L) {
+
+            console.error(
+                'Leaflet library not found.'
+            );
+
+            return;
+        }
+
+
+        /* ------------------------------------------------------
+           PREVENT DUPLICATE MAP INITIALIZATION
+           ------------------------------------------------------ */
+
+        if (this.map) {
+
+            console.warn(
+                'Radar map already initialized.'
+            );
+
+            return;
+        }
+
+
+        /* ------------------------------------------------------
+           CREATE MAP
+           ------------------------------------------------------ */
+
+        try {
+
+            this.map = L.map(
+                'radar-map',
+                {
+                    zoomControl: true,
+
+                    attributionControl: true,
+
+                    preferCanvas: true,
+
+                    worldCopyJump: true,
+
+                    minZoom: 2,
+
+                    maxZoom: 18
+                }
+            );
+
+
+            /*
+             * Center around Maharashtra / India.
+             */
+
+            this.map.setView(
+                [19.8762, 75.3433],
+                7
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                'Leaflet map initialization failed:',
+                error
+            );
+
+            this.map = null;
+
+            return;
+        }
+
+
+        /* ======================================================
+           DARK BASEMAP
+           ======================================================
+
+           OpenStreetMap is intentionally used here instead
+           of the previous CARTO URL.
+
+           This makes the base map reliable and avoids the
+           broken / fragmented tile appearance.
+        ====================================================== */
+
+        this.darkTileLayer =
+            L.tileLayer(
+                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                {
+                    maxZoom: 19,
+
+                    minZoom: 2,
+
+                    tileSize: 256,
+
+                    updateWhenIdle: false,
+
+                    keepBuffer: 2,
+
+                    attribution:
+                        '&copy; OpenStreetMap contributors'
+                }
+            );
+
+
+        /* ------------------------------------------------------
+           Add dark base map
+        ------------------------------------------------------ */
+
+        this.darkTileLayer.addTo(
+            this.map
+        );
+
+
+        /* ======================================================
+           SATELLITE BASEMAP
+        ====================================================== */
+
+        this.satelliteTileLayer =
+            L.tileLayer(
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                {
+                    maxZoom: 18,
+
+                    minZoom: 2,
+
+                    tileSize: 256,
+
+                    updateWhenIdle: false,
+
+                    keepBuffer: 2,
+
+                    attribution:
+                        'Tiles &copy; Esri'
+                }
+            );
+
+
+        /* ======================================================
+           DATA LAYER GROUPS
+        ====================================================== */
+
+        this.radarLayerGroup =
+            L.layerGroup();
+
+
+        this.lightningLayerGroup =
+            L.layerGroup();
+
+
+        this.windLayerGroup =
+            L.layerGroup();
+
+
+        /*
+         * Add vector groups to map.
+         */
+
+        this.radarLayerGroup.addTo(
+            this.map
+        );
+
+
+        this.lightningLayerGroup.addTo(
+            this.map
+        );
+
+
+        this.windLayerGroup.addTo(
+            this.map
+        );
+
+
+        /* ======================================================
+           LIVE RADAR
+        ====================================================== */
+
+        this.addLiveRadarLayer();
+
+
+        /* ======================================================
+           EXISTING STORM DATA
+        ====================================================== */
+
         this.renderStormCells();
-      });
-    });
 
-    // Playback buttons
-    const playPauseBtn = document.getElementById('radar-play-btn');
-    if (playPauseBtn) {
-      playPauseBtn.addEventListener('click', () => {
-        this.isPlaying = !this.isPlaying;
-        playPauseBtn.innerHTML = this.isPlaying ? '<i data-lucide="pause"></i> Pause' : '<i data-lucide="play"></i> Play';
-        if (window.lucide) window.lucide.createIcons();
-      });
-    }
+        this.renderLightning();
 
-    // Time slider
-    const timeSlider = document.getElementById('radar-time-slider');
-    if (timeSlider) {
-      timeSlider.addEventListener('input', (e) => {
-        this.currentFrameIndex = parseInt(e.target.value);
+
+        /* ======================================================
+           MAP EVENTS
+        ====================================================== */
+
+        this.map.on(
+            'resize',
+            () => {
+                this.invalidateMapSize();
+            }
+        );
+
+
+        this.map.on(
+            'zoomend',
+            () => {
+                console.log(
+                    'Radar map zoom:',
+                    this.map.getZoom()
+                );
+            }
+        );
+
+
+        /* ======================================================
+           TILE ERROR MONITORING
+        ====================================================== */
+
+        this.darkTileLayer.on(
+            'tileerror',
+            (event) => {
+
+                console.warn(
+                    'Base map tile failed:',
+                    event?.tile?.src || event
+                );
+
+            }
+        );
+
+
+        this.satelliteTileLayer.on(
+            'tileerror',
+            (event) => {
+
+                console.warn(
+                    'Satellite tile failed:',
+                    event?.tile?.src || event
+                );
+
+            }
+        );
+
+
+        console.log(
+            'Radar map initialized successfully.'
+        );
+    },
+
+
+    /* ==========================================================
+       MAP SIZE FIX
+       ========================================================== */
+
+    invalidateMapSize() {
+
+        if (!this.map) {
+            return;
+        }
+
+        try {
+
+            this.map.invalidateSize({
+                animate: false,
+                pan: false
+            });
+
+        } catch (error) {
+
+            console.warn(
+                'Could not invalidate radar map size:',
+                error
+            );
+        }
+    },
+
+
+    /* ==========================================================
+       RESIZE OBSERVER
+       ========================================================== */
+
+    setupMapResizeObserver() {
+
+        const mapEl =
+            document.getElementById('radar-map');
+
+
+        if (!mapEl) {
+            return;
+        }
+
+
+        /*
+         * ResizeObserver prevents the common Leaflet issue
+         * where only part of the map tiles appear.
+         */
+
+        if (
+            typeof ResizeObserver !==
+            'undefined'
+        ) {
+
+            this.mapResizeObserver =
+                new ResizeObserver(() => {
+
+                    this.invalidateMapSize();
+
+                });
+
+
+            this.mapResizeObserver.observe(
+                mapEl
+            );
+        }
+    },
+
+
+    /* ==========================================================
+       LIVE TOMORROW.IO RADAR
+       ========================================================== */
+
+    addLiveRadarLayer() {
+
+        if (!this.map) {
+
+            console.warn(
+                'Cannot add live radar: map not initialized.'
+            );
+
+            return;
+        }
+
+
+        /* ------------------------------------------------------
+           REMOVE OLD RADAR
+        ------------------------------------------------------ */
+
+        if (this.liveRadarLayer) {
+
+            try {
+
+                this.map.removeLayer(
+                    this.liveRadarLayer
+                );
+
+            } catch (error) {
+
+                console.warn(
+                    'Could not remove old radar layer:',
+                    error
+                );
+            }
+
+            this.liveRadarLayer = null;
+        }
+
+
+        /* ======================================================
+           LIVE RADAR TILE URL
+           ======================================================
+
+           Browser
+                ↓
+           /api/radar/tile/{z}/{x}/{y}
+                ↓
+           Node / Express backend
+                ↓
+           Tomorrow.io
+        ====================================================== */
+
+        this.liveRadarLayer =
+            L.tileLayer(
+                '/api/radar/tile/{z}/{x}/{y}',
+                {
+
+                    opacity: 0.68,
+
+                    minZoom: 2,
+
+                    maxZoom: 12,
+
+                    tileSize: 256,
+
+                    zIndex: 500,
+
+                    updateWhenIdle: false,
+
+                    updateWhenZooming: false,
+
+                    keepBuffer: 1,
+
+                    crossOrigin: true,
+
+                    attribution:
+                        'Weather data &copy; Tomorrow.io'
+                }
+            );
+
+
+        /* ------------------------------------------------------
+           Radar tile loaded
+        ------------------------------------------------------ */
+
+        this.liveRadarLayer.on(
+            'tileload',
+            () => {
+
+                this.updateRadarStatus(
+                    true
+                );
+
+            }
+        );
+
+
+        /* ------------------------------------------------------
+           Radar tile failed
+        ------------------------------------------------------ */
+
+        this.liveRadarLayer.on(
+            'tileerror',
+            (event) => {
+
+                console.error(
+                    'Tomorrow.io radar tile failed:',
+                    event?.tile?.src || event
+                );
+
+                this.updateRadarStatus(
+                    false
+                );
+
+            }
+        );
+
+
+        /* ------------------------------------------------------
+           Add radar layer
+        ------------------------------------------------------ */
+
+        this.liveRadarLayer.addTo(
+            this.map
+        );
+
+
+        console.log(
+            'LIVE RADAR: Tomorrow.io precipitation layer enabled.'
+        );
+    },
+
+
+    /* ==========================================================
+       RADAR STATUS UI
+       ========================================================== */
+
+    updateRadarStatus(isOnline) {
+
+        /*
+         * Update any existing status elements if they exist.
+         * This function does not require special HTML.
+         */
+
+        const statusElements =
+            document.querySelectorAll(
+                '[data-radar-status]'
+            );
+
+
+        statusElements.forEach(
+            element => {
+
+                if (isOnline) {
+
+                    element.textContent =
+                        'LIVE Radar monitoring active';
+
+                    element.classList.remove(
+                        'offline',
+                        'error'
+                    );
+
+                    element.classList.add(
+                        'online'
+                    );
+
+                } else {
+
+                    element.textContent =
+                        'Radar data unavailable';
+
+                    element.classList.remove(
+                        'online'
+                    );
+
+                    element.classList.add(
+                        'error'
+                    );
+                }
+
+            }
+        );
+    },
+
+
+    /* ==========================================================
+       REFRESH LIVE RADAR
+       ========================================================== */
+
+    refreshLiveRadar() {
+
+        if (!this.map) {
+            return;
+        }
+
+
+        console.log(
+            'Refreshing live radar tiles...'
+        );
+
+
+        /*
+         * Leaflet tile cache-busting.
+         */
+
+        if (this.liveRadarLayer) {
+
+            try {
+
+                this.liveRadarLayer.redraw();
+
+            } catch (error) {
+
+                console.warn(
+                    'Radar redraw failed:',
+                    error
+                );
+
+                this.addLiveRadarLayer();
+            }
+
+        } else {
+
+            this.addLiveRadarLayer();
+        }
+    },
+
+
+    /* ==========================================================
+       AUTOMATIC RADAR REFRESH
+       ========================================================== */
+
+    startLiveRadarRefresh() {
+
+        /*
+         * Prevent duplicate intervals.
+         */
+
+        if (this.radarRefreshInterval) {
+
+            clearInterval(
+                this.radarRefreshInterval
+            );
+        }
+
+
+        /*
+         * Refresh every 10 minutes.
+         */
+
+        this.radarRefreshInterval =
+            setInterval(
+                () => {
+
+                    console.log(
+                        'Automatic radar refresh...'
+                    );
+
+                    this.refreshLiveRadar();
+
+                },
+                10 * 60 * 1000
+            );
+    },
+
+
+    /* ==========================================================
+       STORM CELLS
+       ========================================================== */
+
+    renderStormCells() {
+
+        if (!this.radarLayerGroup) {
+            return;
+        }
+
+
+        this.radarLayerGroup.clearLayers();
+
+
+        if (
+            !this.radarData ||
+            !Array.isArray(
+                this.radarData.stormCells
+            )
+        ) {
+
+            return;
+        }
+
+
+        const colors = {
+
+            Light:
+                '#00F5FF',
+
+            Moderate:
+                '#00FFA3',
+
+            Heavy:
+                '#FFB020',
+
+            Extreme:
+                '#FF3366'
+
+        };
+
+
+        this.radarData.stormCells.forEach(
+            cell => {
+
+                /*
+                 * Validate coordinates.
+                 */
+
+                const lat =
+                    Number(cell.lat);
+
+                const lng =
+                    Number(cell.lng);
+
+
+                if (
+                    !Number.isFinite(lat) ||
+                    !Number.isFinite(lng)
+                ) {
+
+                    return;
+                }
+
+
+                /*
+                 * Filter.
+                 */
+
+                const intensity =
+                    String(
+                        cell.intensity ||
+                        ''
+                    );
+
+
+                if (
+                    this.activeFilter !==
+                        'all' &&
+                    intensity.toLowerCase() !==
+                        this.activeFilter.toLowerCase()
+                ) {
+
+                    return;
+                }
+
+
+                const color =
+                    colors[intensity] ||
+                    '#00D9FF';
+
+
+                const radius =
+                    Number(
+                        cell.radius
+                    ) || 10000;
+
+
+                /* ==================================================
+                   OUTER STORM CLOUD
+                ================================================== */
+
+                const outerCircle =
+                    L.circle(
+                        [
+                            lat,
+                            lng
+                        ],
+                        {
+
+                            color:
+
+                                color,
+
+                            fillColor:
+
+                                color,
+
+                            fillOpacity:
+                                0.20,
+
+                            weight:
+                                2,
+
+                            radius:
+                                radius
+                        }
+                    );
+
+
+                outerCircle
+                    .addTo(
+                        this.radarLayerGroup
+                    );
+
+
+                /* ==================================================
+                   POPUP
+                ================================================== */
+
+                outerCircle.bindPopup(
+                    this.createStormPopup(
+                        cell,
+                        color
+                    )
+                );
+
+
+                /* ==================================================
+                   INNER DENSE CORE
+                ================================================== */
+
+                L.circle(
+                    [
+                        lat,
+                        lng
+                    ],
+                    {
+
+                        color:
+                            color,
+
+                        fillColor:
+                            color,
+
+                        fillOpacity:
+                            0.45,
+
+                        weight:
+                            1,
+
+                        radius:
+                            radius *
+                            0.45
+
+                    }
+                ).addTo(
+                    this.radarLayerGroup
+                );
+
+            }
+        );
+    },
+
+
+    /* ==========================================================
+       STORM POPUP
+       ========================================================== */
+
+    createStormPopup(
+        cell,
+        color
+    ) {
+
+        const name =
+            this.escapeHtml(
+                cell.name ||
+                'Storm Cell'
+            );
+
+
+        const intensity =
+            this.escapeHtml(
+                cell.intensity ||
+                'Unknown'
+            );
+
+
+        const dbz =
+            this.escapeHtml(
+                cell.dbz ??
+                'N/A'
+            );
+
+
+        const speed =
+            this.escapeHtml(
+                cell.speed ??
+                'N/A'
+            );
+
+
+        const direction =
+            this.escapeHtml(
+                cell.direction ||
+                'N/A'
+            );
+
+
+        const lightningRate =
+            this.escapeHtml(
+                cell.lightningRate ??
+                'N/A'
+            );
+
+
+        return `
+            <div
+                style="
+                    color:#111;
+                    font-family:Arial,sans-serif;
+                    min-width:190px;
+                "
+            >
+
+                <h4
+                    style="
+                        margin:0 0 8px;
+                        color:${color};
+                    "
+                >
+                    ${name}
+                </h4>
+
+                <p style="margin:4px 0;">
+                    <b>Intensity:</b>
+                    ${intensity}
+                    (${dbz} dBZ)
+                </p>
+
+                <p style="margin:4px 0;">
+                    <b>Speed:</b>
+                    ${speed}
+                    (${direction})
+                </p>
+
+                <p style="margin:4px 0;">
+                    <b>Lightning Rate:</b>
+                    ${lightningRate}
+                </p>
+
+            </div>
+        `;
+    },
+
+
+    /* ==========================================================
+       LIGHTNING
+       ========================================================== */
+
+    renderLightning() {
+
+        if (!this.lightningLayerGroup) {
+            return;
+        }
+
+
+        this.lightningLayerGroup.clearLayers();
+
+
+        if (
+            !this.radarData ||
+            !Array.isArray(
+                this.radarData.lightningStrikes
+            )
+        ) {
+
+            return;
+        }
+
+
+        this.radarData.lightningStrikes.forEach(
+            strike => {
+
+                const lat =
+                    Number(strike.lat);
+
+                const lng =
+                    Number(strike.lng);
+
+
+                if (
+                    !Number.isFinite(lat) ||
+                    !Number.isFinite(lng)
+                ) {
+
+                    return;
+                }
+
+
+                const strikeIcon =
+                    L.divIcon({
+
+                        className:
+                            'lightning-marker',
+
+                        html: `
+                            <div
+                                style="
+                                    color:#FFE600;
+                                    font-size:22px;
+                                    line-height:20px;
+                                    filter:
+                                        drop-shadow(
+                                            0 0 8px #FFE600
+                                        );
+                                "
+                            >
+                                ⚡
+                            </div>
+                        `,
+
+                        iconSize:
+                            [20, 20],
+
+                        iconAnchor:
+                            [10, 10]
+
+                    });
+
+
+                const marker =
+                    L.marker(
+                        [
+                            lat,
+                            lng
+                        ],
+                        {
+                            icon:
+                                strikeIcon
+                        }
+                    );
+
+
+                marker
+                    .addTo(
+                        this.lightningLayerGroup
+                    );
+
+
+                const ageSec =
+                    this.escapeHtml(
+                        strike.ageSec ??
+                        'N/A'
+                    );
+
+
+                const polarity =
+                    this.escapeHtml(
+                        strike.polarity ||
+                        'Unknown'
+                    );
+
+
+                marker.bindPopup(
+                    `
+                        <div
+                            style="
+                                color:#111;
+                                font-family:Arial,sans-serif;
+                            "
+                        >
+
+                            <b>
+                                Lightning Strike Detected
+                            </b>
+
+                            <br><br>
+
+                            <b>Age:</b>
+                            ${ageSec}s ago
+
+                            <br>
+
+                            <b>Polarity:</b>
+                            ${polarity}
+
+                        </div>
+                    `
+                );
+
+            }
+        );
+    },
+
+
+    /* ==========================================================
+       HTML ESCAPE
+       ========================================================== */
+
+    escapeHtml(value) {
+
+        return String(value)
+            .replace(
+                /&/g,
+                '&amp;'
+            )
+            .replace(
+                /</g,
+                '&lt;'
+            )
+            .replace(
+                />/g,
+                '&gt;'
+            )
+            .replace(
+                /"/g,
+                '&quot;'
+            )
+            .replace(
+                /'/g,
+                '&#039;'
+            );
+    },
+
+
+    /* ==========================================================
+       CONTROLS
+       ========================================================== */
+
+    bindControls() {
+
+
+        /* ======================================================
+           RADAR / SATELLITE
+        ====================================================== */
+
+        const radarTab =
+            document.getElementById(
+                'tab-mode-radar'
+            );
+
+
+        const satelliteTab =
+            document.getElementById(
+                'tab-mode-satellite'
+            );
+
+
+        if (
+            radarTab &&
+            satelliteTab
+        ) {
+
+            radarTab.addEventListener(
+                'click',
+                () => {
+
+                    radarTab.classList.add(
+                        'active'
+                    );
+
+
+                    satelliteTab.classList.remove(
+                        'active'
+                    );
+
+
+                    this.setMode(
+                        'radar'
+                    );
+
+                }
+            );
+
+
+            satelliteTab.addEventListener(
+                'click',
+                () => {
+
+                    satelliteTab.classList.add(
+                        'active'
+                    );
+
+
+                    radarTab.classList.remove(
+                        'active'
+                    );
+
+
+                    this.setMode(
+                        'satellite'
+                    );
+
+                }
+            );
+        }
+
+
+        /* ======================================================
+           INTENSITY FILTERS
+        ====================================================== */
+
+        const filterBtns =
+            document.querySelectorAll(
+                '.radar-filter-btn'
+            );
+
+
+        filterBtns.forEach(
+            btn => {
+
+                btn.addEventListener(
+                    'click',
+                    () => {
+
+                        filterBtns.forEach(
+                            b => {
+
+                                b.classList.remove(
+                                    'active'
+                                );
+
+                            }
+                        );
+
+
+                        btn.classList.add(
+                            'active'
+                        );
+
+
+                        this.activeFilter =
+                            btn.dataset.filter ||
+                            'all';
+
+
+                        this.renderStormCells();
+
+                    }
+                );
+
+            }
+        );
+
+
+        /* ======================================================
+           PLAY / PAUSE
+        ====================================================== */
+
+        const playPauseBtn =
+            document.getElementById(
+                'radar-play-btn'
+            );
+
+
+        if (playPauseBtn) {
+
+            playPauseBtn.addEventListener(
+                'click',
+                () => {
+
+                    this.isPlaying =
+                        !this.isPlaying;
+
+
+                    if (
+                        this.isPlaying
+                    ) {
+
+                        playPauseBtn.innerHTML =
+                            `
+                                <i
+                                    data-lucide="pause"
+                                ></i>
+                                Pause
+                            `;
+
+                    } else {
+
+                        playPauseBtn.innerHTML =
+                            `
+                                <i
+                                    data-lucide="play"
+                                ></i>
+                                Play
+                            `;
+                    }
+
+
+                    if (
+                        window.lucide
+                    ) {
+
+                        window.lucide.createIcons();
+
+                    }
+
+                }
+            );
+        }
+
+
+        /* ======================================================
+           TIME SLIDER
+        ====================================================== */
+
+        const timeSlider =
+            document.getElementById(
+                'radar-time-slider'
+            );
+
+
+        if (timeSlider) {
+
+            /*
+             * Make sure slider has a valid range.
+             */
+
+            if (
+                !timeSlider.max ||
+                Number(timeSlider.max) < 1
+            ) {
+
+                timeSlider.max =
+                    this.getFrameCount() - 1;
+
+            }
+
+
+            if (
+                !timeSlider.value
+            ) {
+
+                timeSlider.value =
+                    this.currentFrameIndex;
+
+            }
+
+
+            timeSlider.addEventListener(
+                'input',
+                event => {
+
+                    const value =
+                        parseInt(
+                            event.target.value,
+                            10
+                        );
+
+
+                    if (
+                        Number.isFinite(value)
+                    ) {
+
+                        this.currentFrameIndex =
+                            value;
+
+                        this.updateTimeLabel();
+
+                    }
+
+                }
+            );
+        }
+
+
+        /*
+         * Update initial timeline label.
+         */
+
         this.updateTimeLabel();
-      });
-    }
-  },
+    },
 
-  setMode(mode) {
-    this.currentMode = mode;
-    if (mode === 'satellite') {
-      this.map.removeLayer(this.darkTileLayer);
-      this.satelliteTileLayer.addTo(this.map);
-    } else {
-      this.map.removeLayer(this.satelliteTileLayer);
-      this.darkTileLayer.addTo(this.map);
-    }
-  },
 
-  updateTimeLabel() {
-    const lbl = document.getElementById('radar-frame-label');
-    if (lbl && this.radarData && this.radarData.frames) {
-      const frame = this.radarData.frames[this.currentFrameIndex] || this.radarData.frames[4];
-      lbl.textContent = `${frame.time} (${frame.label})`;
-    }
-  },
+    /* ==========================================================
+       GET FRAME COUNT
+       ========================================================== */
 
-  startAnimationLoop() {
-    this.playbackInterval = setInterval(() => {
-      if (this.isPlaying && this.radarData && this.radarData.frames) {
-        this.currentFrameIndex = (this.currentFrameIndex + 1) % this.radarData.frames.length;
-        const slider = document.getElementById('radar-time-slider');
-        if (slider) slider.value = this.currentFrameIndex;
-        this.updateTimeLabel();
-      }
-    }, 1800);
-  }
+    getFrameCount() {
+
+        if (
+            this.radarData &&
+            Array.isArray(
+                this.radarData.frames
+            ) &&
+            this.radarData.frames.length
+        ) {
+
+            return this.radarData.frames.length;
+        }
+
+
+        return 5;
+    },
+
+
+    /* ==========================================================
+       RADAR / SATELLITE MODE
+       ========================================================== */
+
+    setMode(mode) {
+
+        this.currentMode =
+            mode;
+
+
+        if (!this.map) {
+            return;
+        }
+
+
+        /* ======================================================
+           SATELLITE MODE
+        ====================================================== */
+
+        if (
+            mode === 'satellite'
+        ) {
+
+            /*
+             * Remove dark basemap.
+             */
+
+            if (
+                this.darkTileLayer &&
+                this.map.hasLayer(
+                    this.darkTileLayer
+                )
+            ) {
+
+                this.map.removeLayer(
+                    this.darkTileLayer
+                );
+            }
+
+
+            /*
+             * Add satellite.
+             */
+
+            if (
+                this.satelliteTileLayer &&
+                !this.map.hasLayer(
+                    this.satelliteTileLayer
+                )
+            ) {
+
+                this.satelliteTileLayer.addTo(
+                    this.map
+                );
+            }
+
+
+            /*
+             * Keep live radar over satellite.
+             */
+
+            if (
+                this.liveRadarLayer &&
+                !this.map.hasLayer(
+                    this.liveRadarLayer
+                )
+            ) {
+
+                this.liveRadarLayer.addTo(
+                    this.map
+                );
+            }
+
+
+            console.log(
+                'Radar mode: SATELLITE'
+            );
+
+
+        } else {
+
+
+            /* ==================================================
+               RADAR / DARK MODE
+            ================================================== */
+
+            if (
+                this.satelliteTileLayer &&
+                this.map.hasLayer(
+                    this.satelliteTileLayer
+                )
+            ) {
+
+                this.map.removeLayer(
+                    this.satelliteTileLayer
+                );
+            }
+
+
+            if (
+                this.darkTileLayer &&
+                !this.map.hasLayer(
+                    this.darkTileLayer
+                )
+            ) {
+
+                this.darkTileLayer.addTo(
+                    this.map
+                );
+            }
+
+
+            /*
+             * Make sure radar remains visible.
+             */
+
+            if (
+                this.liveRadarLayer &&
+                !this.map.hasLayer(
+                    this.liveRadarLayer
+                )
+            ) {
+
+                this.liveRadarLayer.addTo(
+                    this.map
+                );
+            }
+
+
+            console.log(
+                'Radar mode: DARK RADAR'
+            );
+        }
+
+
+        /*
+         * Leaflet sometimes needs a resize
+         * after switching layers.
+         */
+
+        setTimeout(
+            () => {
+
+                this.invalidateMapSize();
+
+            },
+            150
+        );
+    },
+
+
+    /* ==========================================================
+       TIME LABEL
+       ========================================================== */
+
+    updateTimeLabel() {
+
+        const label =
+            document.getElementById(
+                'radar-frame-label'
+            );
+
+
+        if (!label) {
+            return;
+        }
+
+
+        /*
+         * If backend supplied frames,
+         * use them.
+         */
+
+        if (
+            this.radarData &&
+            Array.isArray(
+                this.radarData.frames
+            ) &&
+            this.radarData.frames.length
+        ) {
+
+            const index =
+                Math.max(
+                    0,
+                    Math.min(
+                        this.currentFrameIndex,
+                        this.radarData.frames.length - 1
+                    )
+                );
+
+
+            const frame =
+                this.radarData.frames[
+                    index
+                ];
+
+
+            if (frame) {
+
+                const time =
+                    frame.time ||
+                    'Live';
+
+
+                const frameLabel =
+                    frame.label ||
+                    '';
+
+
+                label.textContent =
+                    `${time}${
+                        frameLabel
+                            ? ` (${frameLabel})`
+                            : ''
+                    }`;
+
+                return;
+            }
+        }
+
+
+        /*
+         * Fallback label.
+         */
+
+        label.textContent =
+            'Live Radar';
+    },
+
+
+    /* ==========================================================
+       TIMELINE ANIMATION
+       ========================================================== */
+
+    startAnimationLoop() {
+
+        /*
+         * Stop previous interval.
+         */
+
+        if (
+            this.playbackInterval
+        ) {
+
+            clearInterval(
+                this.playbackInterval
+            );
+        }
+
+
+        /*
+         * Run every 1800ms.
+         */
+
+        this.playbackInterval =
+            setInterval(
+                () => {
+
+                    if (
+                        !this.isPlaying
+                    ) {
+
+                        return;
+                    }
+
+
+                    const frameCount =
+                        this.getFrameCount();
+
+
+                    if (
+                        frameCount <= 0
+                    ) {
+
+                        return;
+                    }
+
+
+                    this.currentFrameIndex =
+                        (
+                            this.currentFrameIndex + 1
+                        ) %
+                        frameCount;
+
+
+                    const slider =
+                        document.getElementById(
+                            'radar-time-slider'
+                        );
+
+
+                    if (slider) {
+
+                        slider.max =
+                            frameCount - 1;
+
+
+                        slider.value =
+                            this.currentFrameIndex;
+                    }
+
+
+                    this.updateTimeLabel();
+
+                },
+                1800
+            );
+    },
+
+
+    /* ==========================================================
+       CLEANUP
+       ========================================================== */
+
+    destroy() {
+
+        /*
+         * Stop timeline.
+         */
+
+        if (
+            this.playbackInterval
+        ) {
+
+            clearInterval(
+                this.playbackInterval
+            );
+
+            this.playbackInterval =
+                null;
+        }
+
+
+        /*
+         * Stop radar refresh.
+         */
+
+        if (
+            this.radarRefreshInterval
+        ) {
+
+            clearInterval(
+                this.radarRefreshInterval
+            );
+
+            this.radarRefreshInterval =
+                null;
+        }
+
+
+        /*
+         * Stop ResizeObserver.
+         */
+
+        if (
+            this.mapResizeObserver
+        ) {
+
+            this.mapResizeObserver.disconnect();
+
+            this.mapResizeObserver =
+                null;
+        }
+
+
+        /*
+         * Remove map.
+         */
+
+        if (this.map) {
+
+            try {
+
+                this.map.remove();
+
+            } catch (error) {
+
+                console.warn(
+                    'Radar map cleanup failed:',
+                    error
+                );
+            }
+
+            this.map =
+                null;
+        }
+
+
+        this.liveRadarLayer =
+            null;
+
+        this.darkTileLayer =
+            null;
+
+        this.satelliteTileLayer =
+            null;
+
+        this.radarLayerGroup =
+            null;
+
+        this.lightningLayerGroup =
+            null;
+
+        this.windLayerGroup =
+            null;
+    }
 };
 
-window.RadarApp = RadarApp;
+
+/* ============================================================
+   PAGE CLEANUP
+   ============================================================ */
+
+window.addEventListener(
+    'beforeunload',
+    () => {
+
+        RadarApp.destroy();
+
+    }
+);
+
+
+/* ============================================================
+   GLOBAL ACCESS
+   ============================================================ */
+
+window.RadarApp =
+    RadarApp;

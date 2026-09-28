@@ -12,6 +12,85 @@
   <link rel="stylesheet" href="/css/responsive.css">
 
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+.city-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 10px 0 14px;
+
+    border: 1px solid rgba(0, 245, 255, 0.25);
+    border-radius: 10px;
+
+    background: rgba(5, 15, 30, 0.85);
+
+    transition: all 0.25s ease;
+}
+
+.city-search-wrap:focus-within {
+    border-color: rgba(0, 245, 255, 0.8);
+
+    box-shadow:
+        0 0 0 3px rgba(0, 245, 255, 0.08),
+        0 0 20px rgba(0, 245, 255, 0.12);
+}
+
+.city-search-input {
+    width: 190px;
+    height: 100%;
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.city-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.city-search-btn {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 7px;
+
+    background: rgba(0, 245, 255, 0.12);
+    color: #00f5ff;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.city-search-btn:hover {
+    background: rgba(0, 245, 255, 0.22);
+    transform: translateY(-1px);
+}
+
+.city-search-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.city-search-wrap > svg {
+    width: 18px;
+    height: 18px;
+    color: #00f5ff;
+    flex-shrink: 0;
+}
+</style>
+
 </head>
 <body class="app-layout">
 
@@ -103,7 +182,41 @@
             <option value="Pune">Pune</option>
             <option value="Nashik">Nashik</option>
             <option value="Nagpur">Nagpur</option>
+            <option value="Mumbai">Mumbai</option>
+            <option value="Delhi">Delhi</option>
+            <option value="Bengaluru">Bengaluru</option>
+            <option value="Hyderabad">Hyderabad</option>
+            <option value="Kolkata">Kolkata</option>
+            <option value="Chennai">Chennai</option>
+            <option value="Ahmedabad">Ahmedabad</option>
+            <option value="Jaipur">Jaipur</option>
+            <option value="Surat">Surat</option>
+            <option value="Indore">Indore</option>
+            <option value="Bhopal">Bhopal</option>
+            <option value="Lucknow">Lucknow</option>
+            <option value="Patna">Patna</option>
+            <option value="Goa">Goa</option>
           </select>
+        </div>
+
+        <div class="city-search-wrap">
+          <i data-lucide="search"></i>
+
+          <input
+            type="text"
+            id="city-search-input"
+            class="city-search-input"
+            placeholder="Search any city..."
+            autocomplete="off"
+          />
+          <button
+            type="button"
+            id="city-search-btn"
+            class="city-search-btn"
+            aria-label="Search city"
+          >
+            <i data-lucide="search"></i>
+          </button>
         </div>
 
         <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">

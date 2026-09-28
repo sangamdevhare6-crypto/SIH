@@ -1,77 +1,333 @@
 const { getLiveWeather } = require('../services/weatherService');
 const { getRadarMetadata } = require('../services/radarService');
 
+
+/**
+ * ============================================================
+ * GET CURRENT WEATHER
+ * /api/weather?city=Mumbai
+ * ============================================================
+ */
 async function getWeather(req, res, next) {
+
   try {
-    const city = req.query.city || 'Chhatrapati Sambhajinagar';
-    const weather = await getLiveWeather(city);
+
+    const city =
+      String(
+        req.query.city ||
+        'Chhatrapati Sambhajinagar'
+      ).trim();
+
+    if (!city) {
+      return res.status(400).json({
+        success: false,
+        message: 'City name is required'
+      });
+    }
+
+    const weather =
+      await getLiveWeather(city);
+
     return res.json({
       success: true,
       data: weather
     });
+
   } catch (err) {
-    next(err);
+
+    console.error(
+      '[GET WEATHER ERROR]',
+      err.message
+    );
+
+    return res.status(502).json({
+      success: false,
+      message: err.message || 'Unable to fetch live weather'
+    });
   }
 }
 
+
+/**
+ * ============================================================
+ * GET LIVE NOWCAST / FORECAST
+ * /api/weather/nowcast?city=Mumbai
+ * ============================================================
+ */
 async function getNowcast(req, res, next) {
+
   try {
-    const city = req.query.city || 'Chhatrapati Sambhajinagar';
-    const weather = await getLiveWeather(city);
 
-    // 5-Hour Forecast array
-    const hourly = weather.forecast || [];
+    const city =
+      String(
+        req.query.city ||
+        'Chhatrapati Sambhajinagar'
+      ).trim();
 
-    // 3-Day summary
-    const threeDays = [
-      { day: 'Today', maxTemp: 26, minTemp: 22, rainProb: 95, condition: 'Heavy Rain Downpour', windGust: '48 km/h' },
-      { day: 'Tomorrow', maxTemp: 27, minTemp: 22, rainProb: 80, condition: 'Scattered Thunderstorms', windGust: '36 km/h' },
-      { day: 'Day 3', maxTemp: 28, minTemp: 23, rainProb: 65, condition: 'Passing Monsoon Showers', windGust: '25 km/h' }
-    ];
+    if (!city) {
+      return res.status(400).json({
+        success: false,
+        message: 'City name is required'
+      });
+    }
 
-    // High precision chart data points for the next 5 hours (15-min intervals)
-    const chartLabels = ['Now', '+15m', '+30m', '+45m', '+1h', '+1h 15m', '+1h 30m', '+1h 45m', '+2h', '+2h 30m', '+3h', '+4h', '+5h'];
-    const precipitationValues = [12.4, 15.2, 18.0, 22.5, 19.8, 16.4, 14.2, 11.0, 9.5, 7.2, 5.0, 3.8, 1.2]; // mm/hr
-    const floodProbability = [88, 92, 95, 96, 94, 90, 85, 78, 72, 65, 58, 45, 30]; // %
+    const weather =
+      await getLiveWeather(city);
 
-    // Forecast Risk Assessment Card
+    /*
+     * Next available OpenWeather forecast periods.
+     * OpenWeather's forecast API provides 3-hour forecast
+     * intervals, so we DO NOT invent 15-minute values.
+     */
+    const hourly =
+      weather.forecast || [];
+
+
+    /*
+     * Real 5-day forecast
+     */
+    const threeDays =
+      (weather.fiveDay || [])
+        .slice(0, 3)
+        .map(day => ({
+          day: day.day,
+          date: day.date,
+
+          maxTemp:
+            day.maxTemp,
+
+          minTemp:
+            day.minTemp,
+
+          rainProb:
+            day.rainProb,
+
+          rainfall_mm:
+            day.rainfall_mm,
+
+          condition:
+            day.condition,
+
+          windGust:
+            day.wind_speed
+              ? `${day.wind_speed} km/h`
+              : 'N/A',
+
+          windDirection:
+            day.wind_direction
+        }));
+
+
+    /*
+     * Real forecast chart data.
+     *
+     * These are OpenWeather forecast intervals,
+     * not fake 15-minute predictions.
+     */
+    const chartLabels =
+      hourly.map(item => item.time);
+
+    const precipitationValues =
+      hourly.map(item =>
+        Number(
+          item.rainfall_mm || 0
+        )
+      );
+
+    const rainProbabilities =
+      hourly.map(item =>
+        Number(
+          item.rainProb || 0
+        )
+      );
+
+
+    /*
+     * Maximum forecast precipitation probability
+     */
+    const maxRainProbability =
+      rainProbabilities.length
+        ? Math.max(...rainProbabilities)
+        : 0;
+
+
+    /*
+     * Highest forecast rainfall
+     */
+    const maxRainfall =
+      precipitationValues.length
+        ? Math.max(...precipitationValues)
+        : 0;
+
+
+    /*
+     * Risk information based ONLY on
+     * weather forecast values.
+     *
+     * This is NOT a government flood warning.
+     */
     const riskAssessment = {
-      overallRisk: 'CRITICAL CONVECTIVE PLUME',
-      floodProbabilityMax: 96,
-      peakRainfallRate: '22.5 mm/hr at +45 mins',
-      runOffIndex: 'Extreme (9.4 / 10)',
-      soilSaturation: '98.5% (Field Capacity Exceeded)',
-      drainageCapacity: 'Overflow imminent in low-lying corridors'
+
+      overallRisk:
+        getWeatherRisk(
+          maxRainProbability,
+          maxRainfall
+        ),
+
+      floodProbabilityMax:
+        maxRainProbability,
+
+      peakRainfallRate:
+        `${maxRainfall.toFixed(1)} mm / forecast period`,
+
+      runOffIndex:
+        getRunoffIndex(
+          maxRainProbability,
+          maxRainfall
+        ),
+
+      soilSaturation:
+        'Not provided by OpenWeather',
+
+      drainageCapacity:
+        'Not provided by OpenWeather'
     };
 
+
     return res.json({
+
       success: true,
-      city,
+
+      city:
+        weather.city,
+
+      country:
+        weather.country,
+
+      latitude:
+        weather.latitude,
+
+      longitude:
+        weather.longitude,
+
       hourly,
+
       threeDays,
+
+      fiveDay:
+        weather.fiveDay || [],
+
       chartData: {
-        labels: chartLabels,
-        precipitationRate: precipitationValues,
-        floodProbability: floodProbability
+
+        labels:
+          chartLabels,
+
+        precipitationRate:
+          precipitationValues,
+
+        floodProbability:
+          rainProbabilities
       },
+
       riskAssessment
     });
+
   } catch (err) {
-    next(err);
+
+    console.error(
+      '[GET NOWCAST ERROR]',
+      err.message
+    );
+
+    return res.status(502).json({
+      success: false,
+      message:
+        err.message ||
+        'Unable to fetch forecast'
+    });
   }
 }
 
+
+/**
+ * ============================================================
+ * WEATHER RISK
+ * ============================================================
+ */
+function getWeatherRisk(
+  rainProbability,
+  rainfall
+) {
+
+  if (
+    rainProbability >= 80 ||
+    rainfall >= 20
+  ) {
+    return 'HIGH PRECIPITATION RISK';
+  }
+
+  if (
+    rainProbability >= 50 ||
+    rainfall >= 5
+  ) {
+    return 'MODERATE PRECIPITATION RISK';
+  }
+
+  return 'LOW PRECIPITATION RISK';
+}
+
+
+/**
+ * ============================================================
+ * RUNOFF INDEX
+ * ============================================================
+ */
+function getRunoffIndex(
+  rainProbability,
+  rainfall
+) {
+
+  if (
+    rainfall >= 20 ||
+    rainProbability >= 80
+  ) {
+    return 'High';
+  }
+
+  if (
+    rainfall >= 5 ||
+    rainProbability >= 50
+  ) {
+    return 'Moderate';
+  }
+
+  return 'Low';
+}
+
+
+/**
+ * ============================================================
+ * RADAR
+ * ============================================================
+ */
 function getRadar(req, res, next) {
+
   try {
-    const radarData = getRadarMetadata();
+
+    const radarData =
+      getRadarMetadata();
+
     return res.json({
       success: true,
       data: radarData
     });
+
   } catch (err) {
+
     next(err);
   }
 }
+
 
 module.exports = {
   getWeather,

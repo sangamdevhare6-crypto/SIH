@@ -22,12 +22,12 @@ const infrastructureRoutes = require('./routes/infrastructureRoutes');
 const routeRoutes = require('./routes/routeRoutes');
 const stationRoutes = require('./routes/stationRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-
+const adminRoutes = require('./routes/adminRoutes');
 const app = express();
 
 // Security headers with configured CSP for Leaflet, Chart.js, Google Fonts, and Lucide icons
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled for seamless CDN integration in command center
+  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false
 }));
 
@@ -82,33 +82,58 @@ app.use('/api/infrastructure', infrastructureRoutes);
 app.use('/api/routes', routeRoutes);
 app.use('/api/monitoring-stations', stationRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Fallback for SPA/Static HTML routing
 app.get('*', (req, res, next) => {
   // If request has file extension or is API, proceed to 404
   if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ success: false, error: 'Endpoint not found' });
+    return res.status(404).json({
+      success: false,
+      error: 'Endpoint not found'
+    });
   }
-  // If asking for a direct .html or resource, check if file exists
-  const targetFile = path.join(frontendPath, req.path.endsWith('.html') ? req.path : `${req.path}.html`);
+
   const fs = require('fs');
+
+  const targetFile = path.join(
+    frontendPath,
+    req.path.endsWith('.html') ? req.path : `${req.path}.html`
+  );
+
   if (fs.existsSync(targetFile)) {
     return res.sendFile(targetFile);
   }
-  return res.sendFile(path.join(frontendPath, 'index.html'));
+
+  const indexFile = path.join(frontendPath, 'index.html');
+
+  if (fs.existsSync(indexFile)) {
+    return res.sendFile(indexFile);
+  }
+
+  return res.status(404).send('Frontend index.html not found');
 });
 
-// Centralized Error Handling
+
 app.use(errorHandler);
 
-// Start Server
+
 async function startServer() {
   try {
     await initDatabase();
+
     app.listen(config.PORT, () => {
-      logger.success(`🚀 WORLD MONITOR Command Center live at http://localhost:${config.PORT}`);
-      logger.info(`🌐 Static UI available at: http://localhost:${config.PORT}/index.html`);
-      logger.info(`📡 Real-Time SSE Stream active at: http://localhost:${config.PORT}/api/realtime/stream`);
+      logger.success(
+        `🚀 WORLD MONITOR Command Center live at http://localhost:${config.PORT}`
+      );
+
+      logger.info(
+        `🌐 Static UI available at: http://localhost:${config.PORT}/index.html`
+      );
+
+      logger.info(
+        `📡 Real-Time SSE Stream active at: http://localhost:${config.PORT}/api/realtime/stream`
+      );
     });
   } catch (err) {
     logger.error('Failed to start server:', err);

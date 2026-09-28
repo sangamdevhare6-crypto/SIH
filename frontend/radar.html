@@ -1,282 +1,1787 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Doppler Radar & Satellite | WORLD MONITOR</title>
-  <meta name="description" content="Live animated Doppler weather radar and high-resolution satellite imagery.">
 
-  <!-- Leaflet Map CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <!-- Core Styles -->
-  <link rel="stylesheet" href="/css/global.css">
-  <link rel="stylesheet" href="/css/dashboard.css">
-  <link rel="stylesheet" href="/css/animations.css">
-  <link rel="stylesheet" href="/css/responsive.css">
+    <meta charset="UTF-8">
 
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Live Doppler Radar & Satellite | WORLD MONITOR</title>
+
+    <meta
+        name="description"
+        content="Live animated Doppler weather radar and high-resolution satellite imagery."
+    >
+
+
+    <!-- =========================================================
+         LEAFLET CSS
+         ========================================================= -->
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+
+    <!-- =========================================================
+         WORLD MONITOR STYLES
+         ========================================================= -->
+
+    <link
+        rel="stylesheet"
+        href="/css/global.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/dashboard.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/animations.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/responsive.css"
+    >
+
+
+    <!-- =========================================================
+         LUCIDE
+         ========================================================= -->
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+
+    <!-- =========================================================
+         LEAFLET JS
+         ========================================================= -->
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+
+    <!-- =========================================================
+         RADAR PAGE CSS
+         ========================================================= -->
+
+    <style>
+
+        /* =====================================================
+           RADAR MAP
+           ===================================================== */
+
+        .radar-map-wrapper {
+
+            position: relative;
+
+            width: 100%;
+
+            height: 600px;
+
+            min-height: 500px;
+
+            overflow: hidden;
+
+            background: #020817;
+
+        }
+
+
+        #radar-map {
+
+            position: absolute;
+
+            inset: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            min-height: 500px;
+
+            background: #020817;
+
+            z-index: 1;
+
+        }
+
+
+        /*
+         * IMPORTANT:
+         * Do NOT use #radar-map .leaflet-container.
+         *
+         * The #radar-map element itself is the
+         * Leaflet container.
+         */
+
+        #radar-map.leaflet-container {
+
+            width: 100%;
+
+            height: 100%;
+
+            min-height: 500px;
+
+            background: #020817;
+
+            font-family:
+                var(--font-inter, Arial, sans-serif);
+
+        }
+
+
+        /*
+         * Prevent global CSS from resizing Leaflet tiles.
+         */
+
+        #radar-map .leaflet-tile {
+
+            max-width: none !important;
+
+            max-height: none !important;
+
+        }
+
+
+        #radar-map img.leaflet-tile {
+
+            width: 256px !important;
+
+            height: 256px !important;
+
+            max-width: none !important;
+
+        }
+
+
+        /*
+         * Keep Leaflet controls above map.
+         */
+
+        #radar-map .leaflet-control-container {
+
+            z-index: 1000;
+
+        }
+
+
+        #radar-map .leaflet-control {
+
+            z-index: 1000;
+
+        }
+
+
+        /* =====================================================
+           POPUPS
+           ===================================================== */
+
+        #radar-map .leaflet-popup-content-wrapper {
+
+            border-radius: 10px;
+
+        }
+
+
+        #radar-map .leaflet-popup-tip {
+
+            background: #ffffff;
+
+        }
+
+
+        /* =====================================================
+           SCANNER
+           ===================================================== */
+
+        .radar-scanner-overlay {
+
+            position: absolute;
+
+            inset: 0;
+
+            z-index: 700;
+
+            pointer-events: none;
+
+            overflow: hidden;
+
+            opacity: 0.18;
+
+        }
+
+
+        .radar-scanner-overlay::after {
+
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+
+            right: 0;
+
+            top: -5%;
+
+            height: 2px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(0, 245, 255, 0.12),
+                    rgba(0, 245, 255, 0.90),
+                    rgba(0, 245, 255, 0.12),
+                    transparent
+                );
+
+            box-shadow:
+                0 0 14px
+                rgba(0, 245, 255, 0.75);
+
+            animation:
+                radarScannerMove 5s linear infinite;
+
+        }
+
+
+        @keyframes radarScannerMove {
+
+            0% {
+
+                transform:
+                    translateY(0);
+
+            }
+
+            100% {
+
+                transform:
+                    translateY(630px);
+
+            }
+
+        }
+
+
+        /* =====================================================
+           LIVE INDICATOR
+           ===================================================== */
+
+        .radar-live-indicator {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            font-family:
+                var(--font-orbitron, monospace);
+
+            font-size: 0.72rem;
+
+            font-weight: 700;
+
+            color:
+                var(--cyan-bright, #00f5ff);
+
+            letter-spacing: 0.06em;
+
+        }
+
+
+        .radar-live-dot {
+
+            width: 8px;
+
+            height: 8px;
+
+            flex-shrink: 0;
+
+            border-radius: 50%;
+
+            background: #00ffa3;
+
+            box-shadow:
+                0 0 10px #00ffa3;
+
+            animation:
+                radarPulse 1.4s ease-in-out infinite;
+
+        }
+
+
+        @keyframes radarPulse {
+
+            0%,
+            100% {
+
+                opacity: 1;
+
+                transform:
+                    scale(1);
+
+            }
+
+            50% {
+
+                opacity: 0.45;
+
+                transform:
+                    scale(0.72);
+
+            }
+
+        }
+
+
+        /* =====================================================
+           RADAR LEGEND
+           ===================================================== */
+
+        .radar-legend {
+
+            position: absolute;
+
+            right: 20px;
+
+            bottom: 20px;
+
+            z-index: 1000;
+
+            width: 235px;
+
+            max-width:
+                calc(100% - 40px);
+
+            padding:
+                14px 16px;
+
+            background:
+                rgba(0, 20, 38, 0.94);
+
+            border:
+                1px solid
+                rgba(0, 245, 255, 0.35);
+
+            border-radius: 12px;
+
+            backdrop-filter:
+                blur(12px);
+
+            -webkit-backdrop-filter:
+                blur(12px);
+
+            box-shadow:
+                0 12px 35px
+                rgba(0, 0, 0, 0.35);
+
+        }
+
+
+        .radar-legend-title {
+
+            margin-bottom: 10px;
+
+            font-family:
+                var(--font-orbitron, monospace);
+
+            font-size: 0.75rem;
+
+            font-weight: 700;
+
+            color: #ffffff;
+
+            letter-spacing: 0.04em;
+
+        }
+
+
+        .radar-legend-row {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content:
+                space-between;
+
+            gap: 10px;
+
+            margin-bottom: 7px;
+
+            font-family:
+                var(--font-rajdhani, Arial, sans-serif);
+
+            font-size: 0.78rem;
+
+            font-weight: 600;
+
+        }
+
+
+        .radar-legend-row:last-child {
+
+            margin-bottom: 0;
+
+        }
+
+
+        .radar-legend-label {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            color: #ffffff;
+
+        }
+
+
+        .radar-legend-color {
+
+            width: 12px;
+
+            height: 12px;
+
+            display: inline-block;
+
+            flex-shrink: 0;
+
+            border-radius: 3px;
+
+        }
+
+
+        .radar-legend-value {
+
+            color:
+                var(--text-muted, #8ea3b8);
+
+            white-space: nowrap;
+
+        }
+
+
+        /* =====================================================
+           RADAR STATUS
+           ===================================================== */
+
+        .radar-data-status {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 6px;
+
+        }
+
+
+        .radar-data-status.online {
+
+            color: #00ffa3;
+
+        }
+
+
+        .radar-data-status.error {
+
+            color: #ff5577;
+
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+           ===================================================== */
+
+        @media (max-width: 900px) {
+
+            .radar-map-wrapper {
+
+                height: 520px;
+
+                min-height: 420px;
+
+            }
+
+            #radar-map {
+
+                min-height: 420px;
+
+            }
+
+            .radar-legend {
+
+                right: 12px;
+
+                bottom: 12px;
+
+                width: 210px;
+
+            }
+
+        }
+
+
+        @media (max-width: 600px) {
+
+            .radar-map-wrapper {
+
+                height: 470px;
+
+                min-height: 400px;
+
+            }
+
+            #radar-map {
+
+                min-height: 400px;
+
+            }
+
+            .radar-legend {
+
+                left: 12px;
+
+                right: 12px;
+
+                bottom: 12px;
+
+                width: auto;
+
+                max-width: none;
+
+            }
+
+            .radar-scanner-overlay {
+
+                opacity: 0.10;
+
+            }
+
+        }
+
+    </style>
+
 </head>
+
+
 <body class="app-layout">
 
-  <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
 
-  <!-- Collapsible Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <a href="/dashboard.html" class="brand-container">
-        <div class="brand-icon-box">
-          <i data-lucide="radio" style="width: 22px; height: 22px;"></i>
-        </div>
-        <div class="brand-text-box">
-          <span class="brand-title">WORLD MONITOR</span>
-          <span class="brand-tagline">Real-time • Safe • Together</span>
-        </div>
-      </a>
-      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle Sidebar">
-        <i data-lucide="panel-left-close"></i>
-      </button>
+    <!-- =========================================================
+         MOBILE DRAWER BACKDROP
+         ========================================================= -->
+
+    <div
+        class="mobile-drawer-backdrop"
+        id="mobile-drawer-backdrop">
     </div>
 
-    <nav class="sidebar-nav">
-      <div class="nav-section-title">Telemetry & Radar</div>
-      <a href="/dashboard.html" class="nav-link">
-        <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
-      </a>
-      <a href="/radar.html" class="nav-link active">
-        <i data-lucide="crosshair"></i> <span>Live Radar</span>
-      </a>
-      <a href="/nowcast.html" class="nav-link">
-        <i data-lucide="cloud-lightning"></i> <span>Nowcast</span>
-      </a>
-      <a href="/flood-map.html" class="nav-link">
-        <i data-lucide="waves"></i> <span>Flood Map</span>
-      </a>
 
-      <div class="nav-section-title">Emergency Response</div>
-      <a href="/alerts.html" class="nav-link">
-        <i data-lucide="alert-triangle"></i> <span>Alerts</span>
-      </a>
-      <a href="/safe-routes.html" class="nav-link">
-        <i data-lucide="map-pin"></i> <span>Safe Routes</span>
-      </a>
-      <a href="/infrastructure.html" class="nav-link">
-        <i data-lucide="building-2"></i> <span>Infrastructure</span>
-      </a>
-      <a href="/citizen-reports.html" class="nav-link">
-        <i data-lucide="megaphone"></i> <span>Citizen Reports</span>
-      </a>
+    <!-- =========================================================
+         SIDEBAR
+         ========================================================= -->
 
-      <div class="nav-section-title">Analytics & Sensors</div>
-      <a href="/reports.html" class="nav-link">
-        <i data-lucide="file-text"></i> <span>Reports</span>
-      </a>
-      <a href="/monitoring-stations.html" class="nav-link">
-        <i data-lucide="cpu"></i> <span>Monitoring Stations</span>
-      </a>
-      <a href="/weather-data.html" class="nav-link">
-        <i data-lucide="wind"></i> <span>Weather Data</span>
-      </a>
+    <aside
+        class="sidebar"
+        id="sidebar">
+
+        <div class="sidebar-header">
+
+            <a
+                href="/dashboard.html"
+                class="brand-container">
+
+                <div class="brand-icon-box">
+
+                    <i
+                        data-lucide="radio"
+                        style="width:22px;height:22px;">
+                    </i>
+
+                </div>
+
+
+                <div class="brand-text-box">
+
+                    <span class="brand-title">
+                        WORLD MONITOR
+                    </span>
+
+                    <span class="brand-tagline">
+                        Real-time • Safe • Together
+                    </span>
+
+                </div>
+
+            </a>
+
+
+            <button
+                class="sidebar-toggle-btn"
+                id="sidebar-toggle-btn"
+                title="Toggle Sidebar"
+                type="button">
+
+                <i data-lucide="panel-left-close"></i>
+
+            </button>
+
+        </div>
+
+
+        <!-- =====================================================
+             NAVIGATION
+             ===================================================== -->
+
+        <nav class="sidebar-nav">
+
+            <div class="nav-section-title">
+                Telemetry & Radar
+            </div>
+
+
+            <a
+                href="/dashboard.html"
+                class="nav-link">
+
+                <i data-lucide="layout-dashboard"></i>
+
+                <span>
+                    Dashboard
+                </span>
+
+            </a>
+
+
+            <a
+                href="/radar.html"
+                class="nav-link active">
+
+                <i data-lucide="crosshair"></i>
+
+                <span>
+                    Live Radar
+                </span>
+
+            </a>
+
+
+            <a
+                href="/nowcast.html"
+                class="nav-link">
+
+                <i data-lucide="cloud-lightning"></i>
+
+                <span>
+                    Nowcast
+                </span>
+
+            </a>
+
+
+            <a
+                href="/flood-map.html"
+                class="nav-link">
+
+                <i data-lucide="waves"></i>
+
+                <span>
+                    Flood Map
+                </span>
+
+            </a>
+
+
+            <div class="nav-section-title">
+                Emergency Response
+            </div>
+
+
+            <a
+                href="/alerts.html"
+                class="nav-link">
+
+                <i data-lucide="alert-triangle"></i>
+
+                <span>
+                    Alerts
+                </span>
+
+            </a>
+
+
+            <a
+                href="/safe-routes.html"
+                class="nav-link">
+
+                <i data-lucide="map-pin"></i>
+
+                <span>
+                    Safe Routes
+                </span>
+
+            </a>
+
+
+            <a
+                href="/infrastructure.html"
+                class="nav-link">
+
+                <i data-lucide="building-2"></i>
+
+                <span>
+                    Infrastructure
+                </span>
+
+            </a>
+
+
+            <a
+                href="/citizen-reports.html"
+                class="nav-link">
+
+                <i data-lucide="megaphone"></i>
+
+                <span>
+                    Citizen Reports
+                </span>
+
+            </a>
+
+
+            <div class="nav-section-title">
+                Analytics & Sensors
+            </div>
+
+
+            <a
+                href="/reports.html"
+                class="nav-link">
+
+                <i data-lucide="file-text"></i>
+
+                <span>
+                    Reports
+                </span>
+
+            </a>
+
+
+            <a
+                href="/monitoring-stations.html"
+                class="nav-link">
+
+                <i data-lucide="cpu"></i>
+
+                <span>
+                    Monitoring Stations
+                </span>
+
+            </a>
+
+
+            <a
+                href="/weather-data.html"
+                class="nav-link">
+
+                <i data-lucide="wind"></i>
+
+                <span>
+                    Weather Data
+                </span>
+
+            </a>
+
+        </nav>
+
+
+        <!-- =====================================================
+             SIDEBAR FOOTER
+             ===================================================== -->
+
+        <div class="sidebar-footer">
+
+            <a
+                href="/settings.html"
+                class="nav-link">
+
+                <i data-lucide="settings"></i>
+
+                <span>
+                    Settings
+                </span>
+
+            </a>
+
+
+            <a
+                href="/profile.html"
+                class="nav-link">
+
+                <i data-lucide="user"></i>
+
+                <span>
+                    Profile
+                </span>
+
+            </a>
+
+
+            <a
+                href="#"
+                class="nav-link logout-link"
+                id="logout-trigger-btn">
+
+                <i data-lucide="log-out"></i>
+
+                <span>
+                    Logout
+                </span>
+
+            </a>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =========================================================
+         MAIN WRAPPER
+         ========================================================= -->
+
+    <div class="main-wrapper">
+
+
+        <!-- =====================================================
+             TOPBAR
+             ===================================================== -->
+
+        <header class="topbar">
+
+            <div class="topbar-left">
+
+                <button
+                    class="mobile-menu-btn"
+                    id="mobile-menu-btn"
+                    title="Open Menu"
+                    type="button">
+
+                    <i data-lucide="menu"></i>
+
+                </button>
+
+
+                <!-- CITY SELECTOR -->
+
+                <div class="location-selector-wrap">
+
+                    <i data-lucide="map-pin"></i>
+
+                    <select
+                        id="global-city-select"
+                        class="city-select">
+
+                        <option value="Chhatrapati Sambhajinagar">
+                            Chhatrapati Sambhajinagar
+                        </option>
+
+                        <option value="Pune">
+                            Pune
+                        </option>
+
+                        <option value="Nashik">
+                            Nashik
+                        </option>
+
+                        <option value="Nagpur">
+                            Nagpur
+                        </option>
+
+                        <option value="Mumbai">
+                            Mumbai
+                        </option>
+
+                        <option value="Delhi">
+                            Delhi
+                        </option>
+
+                        <option value="Bengaluru">
+                            Bengaluru
+                        </option>
+
+                        <option value="Hyderabad">
+                            Hyderabad
+                        </option>
+
+                        <option value="Kolkata">
+                            Kolkata
+                        </option>
+
+                        <option value="Chennai">
+                            Chennai
+                        </option>
+
+                        <option value="Ahmedabad">
+                            Ahmedabad
+                        </option>
+
+                        <option value="Jaipur">
+                            Jaipur
+                        </option>
+
+                        <option value="Surat">
+                            Surat
+                        </option>
+
+                        <option value="Indore">
+                            Indore
+                        </option>
+
+                        <option value="Bhopal">
+                            Bhopal
+                        </option>
+
+                        <option value="Lucknow">
+                            Lucknow
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- SYSTEM CLOCK -->
+
+                <div
+                    id="system-clock"
+                    style="
+                        font-family:var(--font-orbitron);
+                        font-size:0.88rem;
+                        color:var(--cyan-vibrant);
+                        font-weight:700;
+                    ">
+
+                    --:--:-- IST
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 TOPBAR RIGHT
+                 ================================================= -->
+
+            <div class="topbar-right">
+
+
+                <!-- RADAR STATUS -->
+
+                <div class="system-status-pill">
+
+                    <span class="pulse-dot"></span>
+
+                    DOPPLER RADAR SWEEP ACTIVE
+
+                </div>
+
+
+                <!-- NOTIFICATIONS -->
+
+                <button
+                    class="notif-bell-btn"
+                    id="notif-bell-btn"
+                    title="Emergency Notifications"
+                    type="button">
+
+                    <i data-lucide="bell"></i>
+
+                    <span
+                        class="notif-badge"
+                        id="notif-badge"
+                        style="display:none;">
+
+                        0
+
+                    </span>
+
+                </button>
+
+
+                <!-- NOTIFICATION PANEL -->
+
+                <div
+                    class="notif-panel"
+                    id="notif-panel">
+
+                    <div class="notif-panel-header">
+
+                        <span
+                            style="
+                                font-family:var(--font-orbitron);
+                                font-size:0.95rem;
+                                font-weight:700;
+                                color:#FFF;
+                            ">
+
+                            Emergency Notifications
+
+                        </span>
+
+
+                        <button
+                            id="mark-all-read-btn"
+                            type="button"
+                            style="
+                                background:none;
+                                border:none;
+                                color:var(--cyan-bright);
+                                font-size:0.78rem;
+                                cursor:pointer;
+                            ">
+
+                            Mark all as read
+
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        class="notif-list"
+                        id="notif-list">
+                    </div>
+
+                </div>
+
+
+                <!-- USER -->
+
+                <a
+                    href="/profile.html"
+                    class="user-profile-pill">
+
+                    <img
+                        src="/assets/avatars/officer.png"
+                        class="user-avatar-img"
+                        id="topbar-avatar-img"
+                        alt="Avatar"
+                        onerror="
+                            this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
+                        "
+                    >
+
+
+                    <div class="user-info-text">
+
+                        <span
+                            class="user-name"
+                            id="topbar-user-name">
+
+                            Commander Admin
+
+                        </span>
+
+
+                        <span
+                            class="user-role-tag"
+                            id="topbar-user-role">
+
+                            AUTHORITY
+
+                        </span>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+        </header>
+
+
+        <!-- =====================================================
+             MAIN CONTENT
+             ===================================================== -->
+
+        <main
+            class="content-area"
+            style="padding-bottom:var(--space-xl);">
+
+
+            <!-- =================================================
+                 RADAR CONTROL PANEL
+                 ================================================= -->
+
+            <section
+                class="hud-panel animate-fade-in"
+                style="
+                    padding:14px 20px;
+                    margin-bottom:16px;
+                ">
+
+                <div
+                    style="
+                        display:flex;
+                        align-items:center;
+                        justify-content:space-between;
+                        flex-wrap:wrap;
+                        gap:14px;
+                    ">
+
+
+                    <!-- RADAR / SATELLITE -->
+
+                    <div
+                        class="auth-role-tabs"
+                        style="
+                            margin-bottom:0;
+                            min-width:240px;
+                        ">
+
+                        <button
+                            class="role-tab-btn active"
+                            id="tab-mode-radar"
+                            type="button">
+
+                            <i
+                                data-lucide="crosshair"
+                                style="
+                                    width:16px;
+                                    height:16px;
+                                    vertical-align:middle;
+                                ">
+                            </i>
+
+                            Doppler Radar
+
+                        </button>
+
+
+                        <button
+                            class="role-tab-btn"
+                            id="tab-mode-satellite"
+                            type="button">
+
+                            <i
+                                data-lucide="globe"
+                                style="
+                                    width:16px;
+                                    height:16px;
+                                    vertical-align:middle;
+                                ">
+                            </i>
+
+                            Satellite
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- PRECIPITATION FILTERS -->
+
+                    <div
+                        style="
+                            display:flex;
+                            align-items:center;
+                            gap:6px;
+                            flex-wrap:wrap;
+                        ">
+
+                        <span
+                            style="
+                                font-family:var(--font-rajdhani);
+                                font-weight:700;
+                                color:var(--text-muted);
+                                font-size:0.85rem;
+                                text-transform:uppercase;
+                            ">
+
+                            Precipitation:
+
+                        </span>
+
+
+                        <button
+                            class="btn btn-outline radar-filter-btn active"
+                            data-filter="all"
+                            type="button"
+                            style="
+                                padding:4px 10px;
+                                font-size:0.78rem;
+                            ">
+
+                            All
+
+                        </button>
+
+
+                        <button
+                            class="btn btn-outline radar-filter-btn"
+                            data-filter="Light"
+                            type="button"
+                            style="
+                                padding:4px 10px;
+                                font-size:0.78rem;
+                                border-color:#00F5FF;
+                                color:#00F5FF;
+                            ">
+
+                            Light
+
+                        </button>
+
+
+                        <button
+                            class="btn btn-outline radar-filter-btn"
+                            data-filter="Moderate"
+                            type="button"
+                            style="
+                                padding:4px 10px;
+                                font-size:0.78rem;
+                                border-color:#00FFA3;
+                                color:#00FFA3;
+                            ">
+
+                            Moderate
+
+                        </button>
+
+
+                        <button
+                            class="btn btn-outline radar-filter-btn"
+                            data-filter="Heavy"
+                            type="button"
+                            style="
+                                padding:4px 10px;
+                                font-size:0.78rem;
+                                border-color:#FFB020;
+                                color:#FFB020;
+                            ">
+
+                            Heavy
+
+                        </button>
+
+
+                        <button
+                            class="btn btn-outline radar-filter-btn"
+                            data-filter="Extreme"
+                            type="button"
+                            style="
+                                padding:4px 10px;
+                                font-size:0.78rem;
+                                border-color:#FF3366;
+                                color:#FF3366;
+                            ">
+
+                            Extreme
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- PLAYBACK -->
+
+                    <div
+                        style="
+                            display:flex;
+                            align-items:center;
+                            gap:12px;
+                        ">
+
+                        <button
+                            class="btn btn-primary"
+                            id="radar-play-btn"
+                            type="button"
+                            style="
+                                padding:6px 14px;
+                                font-size:0.85rem;
+                            ">
+
+                            <i data-lucide="pause"></i>
+
+                            Pause
+
+                        </button>
+
+
+                        <div
+                            style="
+                                display:flex;
+                                flex-direction:column;
+                                gap:4px;
+                            ">
+
+                            <span
+                                id="radar-frame-label"
+                                class="radar-live-indicator">
+
+                                <span
+                                    class="radar-live-dot">
+                                </span>
+
+                                LIVE RADAR
+
+                            </span>
+
+
+                            <input
+                                type="range"
+                                id="radar-time-slider"
+                                min="0"
+                                max="4"
+                                value="4"
+                                step="1"
+                                style="
+                                    width:140px;
+                                    accent-color:var(--cyan-bright);
+                                "
+                            >
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 RADAR MAP
+                 ================================================= -->
+
+            <section
+                class="hud-panel animate-slide-up"
+                style="
+                    padding:0;
+                    overflow:hidden;
+                    position:relative;
+                ">
+
+
+                <div class="radar-map-wrapper">
+
+
+                    <!-- SCANNER -->
+
+                    <div
+                        class="radar-scanner-overlay">
+                    </div>
+
+
+                    <!-- MAP -->
+
+                    <div
+                        id="radar-map">
+                    </div>
+
+
+                    <!-- =================================================
+                         RADAR LEGEND
+                         ================================================= -->
+
+                    <div
+                        class="radar-legend">
+
+                        <div
+                            class="radar-legend-title">
+
+                            RADAR REFLECTIVITY (dBZ)
+
+                        </div>
+
+
+                        <div
+                            class="radar-legend-row">
+
+                            <span
+                                class="radar-legend-label">
+
+                                <span
+                                    class="radar-legend-color"
+                                    style="background:#FF3366;">
+                                </span>
+
+                                Extreme (55+ dBZ)
+
+                            </span>
+
+
+                            <span
+                                class="radar-legend-value">
+
+                                &gt; 50 mm/h
+
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="radar-legend-row">
+
+                            <span
+                                class="radar-legend-label">
+
+                                <span
+                                    class="radar-legend-color"
+                                    style="background:#FFB020;">
+                                </span>
+
+                                Heavy (45-55 dBZ)
+
+                            </span>
+
+
+                            <span
+                                class="radar-legend-value">
+
+                                10-50 mm/h
+
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="radar-legend-row">
+
+                            <span
+                                class="radar-legend-label">
+
+                                <span
+                                    class="radar-legend-color"
+                                    style="background:#00FFA3;">
+                                </span>
+
+                                Moderate (30-45 dBZ)
+
+                            </span>
+
+
+                            <span
+                                class="radar-legend-value">
+
+                                2.5-10 mm/h
+
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="radar-legend-row">
+
+                            <span
+                                class="radar-legend-label">
+
+                                <span
+                                    class="radar-legend-color"
+                                    style="background:#00F5FF;">
+                                </span>
+
+                                Light (15-30 dBZ)
+
+                            </span>
+
+
+                            <span
+                                class="radar-legend-value">
+
+                                0.1-2.5 mm/h
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 LIVE STATUS FOOTER
+                 ================================================= -->
+
+            <div
+                style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    gap:12px;
+                    flex-wrap:wrap;
+                    margin-top:12px;
+                    padding:8px 4px;
+                    color:var(--text-muted);
+                    font-family:var(--font-rajdhani);
+                    font-size:0.78rem;
+                ">
+
+
+                <span
+                    class="radar-data-status"
+                    data-radar-status>
+
+                    <span
+                        style="
+                            color:#00FFA3;
+                            font-weight:700;
+                        ">
+
+                        ● LIVE
+
+                    </span>
+
+                    Radar monitoring active
+
+                </span>
+
+
+                <span>
+
+                    Data layer:
+
+                    <b
+                        style="
+                            color:var(--cyan-bright);
+                        ">
+
+                        Tomorrow.io
+
+                    </b>
+
+                </span>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <!-- =========================================================
+         MOBILE BOTTOM NAV
+         ========================================================= -->
+
+    <nav class="mobile-bottom-nav">
+
+        <a
+            href="/dashboard.html"
+            class="mobile-bottom-item">
+
+            <i data-lucide="layout-dashboard"></i>
+
+            <span>
+                Dashboard
+            </span>
+
+        </a>
+
+
+        <a
+            href="/radar.html"
+            class="mobile-bottom-item active">
+
+            <i data-lucide="crosshair"></i>
+
+            <span>
+                Radar
+            </span>
+
+        </a>
+
+
+        <a
+            href="/alerts.html"
+            class="mobile-bottom-item">
+
+            <i data-lucide="alert-triangle"></i>
+
+            <span>
+                Alerts
+            </span>
+
+        </a>
+
+
+        <a
+            href="/citizen-reports.html"
+            class="mobile-bottom-item">
+
+            <i data-lucide="megaphone"></i>
+
+            <span>
+                Report
+            </span>
+
+        </a>
+
+
+        <a
+            href="/profile.html"
+            class="mobile-bottom-item">
+
+            <i data-lucide="user"></i>
+
+            <span>
+                Profile
+            </span>
+
+        </a>
+
     </nav>
 
-    <div class="sidebar-footer">
-      <a href="/settings.html" class="nav-link">
-        <i data-lucide="settings"></i> <span>Settings</span>
-      </a>
-      <a href="/profile.html" class="nav-link">
-        <i data-lucide="user"></i> <span>Profile</span>
-      </a>
-      <a href="#" class="nav-link logout-link" id="logout-trigger-btn">
-        <i data-lucide="log-out"></i> <span>Logout</span>
-      </a>
+
+    <!-- =========================================================
+         LOGOUT MODAL
+         ========================================================= -->
+
+    <div
+        class="modal-overlay"
+        id="logout-modal">
+
+        <div
+            class="modal-card"
+            style="max-width:440px;">
+
+            <div class="modal-header">
+
+                <h3
+                    style="
+                        font-size:1.15rem;
+                        color:#FFF;
+                    ">
+
+                    Confirm Session Termination
+
+                </h3>
+
+
+                <button
+                    class="sidebar-toggle-btn"
+                    id="logout-cancel-btn"
+                    type="button">
+
+                    ✕
+
+                </button>
+
+            </div>
+
+
+            <div class="modal-body">
+
+                <p
+                    style="
+                        color:var(--text-secondary);
+                        font-size:0.95rem;
+                    ">
+
+                    Are you sure you want to logout of the
+
+                    <b>WORLD MONITOR</b>
+
+                    command terminal?
+
+                </p>
+
+            </div>
+
+
+            <div class="modal-footer">
+
+                <button
+                    class="btn btn-outline"
+                    type="button"
+                    onclick="
+                        document
+                            .getElementById('logout-modal')
+                            .classList.remove('active')
+                    ">
+
+                    Cancel
+
+                </button>
+
+
+                <button
+                    class="btn btn-danger"
+                    id="logout-confirm-btn"
+                    type="button">
+
+                    Logout
+
+                </button>
+
+            </div>
+
+        </div>
+
     </div>
-  </aside>
 
-  <!-- Main Viewport -->
-  <div class="main-wrapper">
-    <!-- Topbar -->
-    <header class="topbar">
-      <div class="topbar-left">
-        <button class="mobile-menu-btn" id="mobile-menu-btn" title="Open Menu">
-          <i data-lucide="menu"></i>
-        </button>
 
-        <div class="location-selector-wrap">
-          <i data-lucide="map-pin"></i>
-          <select id="global-city-select" class="city-select">
-            <option value="Chhatrapati Sambhajinagar">Chhatrapati Sambhajinagar</option>
-            <option value="Pune">Pune</option>
-            <option value="Nashik">Nashik</option>
-            <option value="Nagpur">Nagpur</option>
-          </select>
-        </div>
+    <!-- =========================================================
+         JAVASCRIPT
+         IMPORTANT ORDER
+         ========================================================= -->
 
-        <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">
-          --:--:-- IST
-        </div>
-      </div>
+    <script src="/js/api.js"></script>
 
-      <div class="topbar-right">
-        <div class="system-status-pill">
-          <span class="pulse-dot"></span> DOPPLER RADAR SWEEP ACTIVE
-        </div>
+    <script src="/js/auth.js"></script>
 
-        <button class="notif-bell-btn" id="notif-bell-btn" title="Emergency Notifications">
-          <i data-lucide="bell"></i>
-          <span class="notif-badge" id="notif-badge" style="display: none;">0</span>
-        </button>
+    <script src="/js/notifications.js"></script>
 
-        <div class="notif-panel" id="notif-panel">
-          <div class="notif-panel-header">
-            <span style="font-family: var(--font-orbitron); font-size: 0.95rem; font-weight: 700; color: #FFF;">
-              Emergency Notifications
-            </span>
-            <button id="mark-all-read-btn" style="background: none; border: none; color: var(--cyan-bright); font-size: 0.78rem; cursor: pointer;">
-              Mark all as read
-            </button>
-          </div>
-          <div class="notif-list" id="notif-list"></div>
-        </div>
+    <script src="/js/app.js"></script>
 
-        <a href="/profile.html" class="user-profile-pill">
-          <img src="/assets/avatars/officer.png" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'" class="user-avatar-img" id="topbar-avatar-img" alt="Avatar">
-          <div class="user-info-text">
-            <span class="user-name" id="topbar-user-name">Commander Admin</span>
-            <span class="user-role-tag" id="topbar-user-role">AUTHORITY</span>
-          </div>
-        </a>
-      </div>
-    </header>
+    <!-- radar.js MUST BE LAST -->
 
-    <!-- Radar Page Content -->
-    <main class="content-area" style="padding-bottom: var(--space-xl);">
-      <!-- Radar Controls Bar -->
-      <div class="hud-panel animate-fade-in" style="padding: 14px 20px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
-          <!-- Tabs: Radar vs Satellite (Section 12) -->
-          <div class="auth-role-tabs" style="margin-bottom: 0; min-width: 240px;">
-            <button class="role-tab-btn active" id="tab-mode-radar" type="button">
-              <i data-lucide="crosshair" style="width: 16px; height: 16px; vertical-align: middle;"></i> Doppler Radar
-            </button>
-            <button class="role-tab-btn" id="tab-mode-satellite" type="button">
-              <i data-lucide="globe" style="width: 16px; height: 16px; vertical-align: middle;"></i> Satellite
-            </button>
-          </div>
+    <script src="/js/radar.js"></script>
 
-          <!-- Rainfall Intensity Filters (Section 12: Light, Moderate, Heavy, Extreme) -->
-          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <span style="font-family: var(--font-rajdhani); font-weight: 700; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
-              Precipitation:
-            </span>
-            <button class="btn btn-outline radar-filter-btn active" data-filter="all" style="padding: 4px 10px; font-size: 0.78rem;">
-              All
-            </button>
-            <button class="btn btn-outline radar-filter-btn" data-filter="Light" style="padding: 4px 10px; font-size: 0.78rem; border-color: #00F5FF; color: #00F5FF;">
-              Light
-            </button>
-            <button class="btn btn-outline radar-filter-btn" data-filter="Moderate" style="padding: 4px 10px; font-size: 0.78rem; border-color: #00FFA3; color: #00FFA3;">
-              Moderate
-            </button>
-            <button class="btn btn-outline radar-filter-btn" data-filter="Heavy" style="padding: 4px 10px; font-size: 0.78rem; border-color: #FFB020; color: #FFB020;">
-              Heavy
-            </button>
-            <button class="btn btn-outline radar-filter-btn" data-filter="Extreme" style="padding: 4px 10px; font-size: 0.78rem; border-color: #FF3366; color: #FF3366;">
-              Extreme
-            </button>
-          </div>
 
-          <!-- Playback and Time Frame -->
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="btn btn-primary" id="radar-play-btn" style="padding: 6px 14px; font-size: 0.85rem;">
-              <i data-lucide="pause"></i> Pause
-            </button>
-            <div style="display: flex; flex-direction: column;">
-              <span id="radar-frame-label" style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-bright); font-weight: 700;">
-                Live (+0m)
-              </span>
-              <input type="range" id="radar-time-slider" min="0" max="4" value="4" style="width: 140px; accent-color: var(--cyan-bright);">
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- =========================================================
+         LUCIDE INITIALIZATION
+         ========================================================= -->
 
-      <!-- Radar Map Container with HUD Scanner Line -->
-      <div class="hud-panel animate-slide-up" style="padding: 0; overflow: hidden; position: relative;">
-        <div class="scanner-overlay"></div>
-        <div id="radar-map" style="width: 100%; height: 600px; border-radius: var(--radius-md);"></div>
+    <script>
 
-        <!-- Radar Intensity Legend Card Overlay -->
-        <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(0, 27, 51, 0.9); border: 1px solid var(--border-neon); border-radius: var(--radius-sm); padding: 12px 16px; z-index: 800; backdrop-filter: blur(10px); min-width: 220px;">
-          <div style="font-family: var(--font-orbitron); font-size: 0.8rem; font-weight: 700; color: #FFF; margin-bottom: 8px;">
-            RADAR REFLECTIVITY (dBZ)
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.78rem; font-family: var(--font-rajdhani); font-weight: 600;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; background: #FF3366; display: inline-block; border-radius: 2px;"></span> Extreme (55+ dBZ)</span>
-              <span style="color: var(--text-muted);">> 50 mm/h</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; background: #FFB020; display: inline-block; border-radius: 2px;"></span> Heavy (45-55 dBZ)</span>
-              <span style="color: var(--text-muted);">10-50 mm/h</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; background: #00FFA3; display: inline-block; border-radius: 2px;"></span> Moderate (30-45 dBZ)</span>
-              <span style="color: var(--text-muted);">2.5-10 mm/h</span>
-            </div>
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; background: #00F5FF; display: inline-block; border-radius: 2px;"></span> Light (15-30 dBZ)</span>
-              <span style="color: var(--text-muted);">0.1-2.5 mm/h</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
+        document.addEventListener(
+            'DOMContentLoaded',
+            () => {
 
-  <!-- Mobile Bottom Nav -->
-  <nav class="mobile-bottom-nav">
-    <a href="/dashboard.html" class="mobile-bottom-item">
-      <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
-    </a>
-    <a href="/radar.html" class="mobile-bottom-item active">
-      <i data-lucide="crosshair"></i> <span>Radar</span>
-    </a>
-    <a href="/alerts.html" class="mobile-bottom-item">
-      <i data-lucide="alert-triangle"></i> <span>Alerts</span>
-    </a>
-    <a href="/citizen-reports.html" class="mobile-bottom-item">
-      <i data-lucide="megaphone"></i> <span>Report</span>
-    </a>
-    <a href="/profile.html" class="mobile-bottom-item">
-      <i data-lucide="user"></i> <span>Profile</span>
-    </a>
-  </nav>
+                if (window.lucide) {
 
-  <!-- Logout Modal -->
-  <div class="modal-overlay" id="logout-modal">
-    <div class="modal-card" style="max-width: 440px;">
-      <div class="modal-header">
-        <h3 style="font-size: 1.15rem; color: #FFF;">Confirm Session Termination</h3>
-        <button class="sidebar-toggle-btn" id="logout-cancel-btn">✕</button>
-      </div>
-      <div class="modal-body">
-        <p style="color: var(--text-secondary); font-size: 0.95rem;">
-          Are you sure you want to logout of the <b>WORLD MONITOR</b> command terminal?
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="document.getElementById('logout-modal').classList.remove('active')">
-          Cancel
-        </button>
-        <button class="btn btn-danger" id="logout-confirm-btn">Logout</button>
-      </div>
-    </div>
-  </div>
+                    window.lucide.createIcons();
 
-  <script src="/js/api.js"></script>
-  <script src="/js/auth.js"></script>
-  <script src="/js/notifications.js"></script>
-  <script src="/js/app.js"></script>
-  <script src="/js/radar.js"></script>
+                }
+
+            }
+        );
+
+    </script>
+
 </body>
+</html>
+
 </html>
