@@ -13,11 +13,352 @@ const SafeRoutesApp = {
   shelterLayer: null,
   floodZoneLayer: null,
   riverLayer: null,
+  cityMarker: null,
+  citySearchTimer: null,
+  citySearchRequestId: 0,
+  citySelectionRequestId: 0,
+  citySearchResults: [],
 
   async init() {
     this.initMap();
     await this.loadMapLayers();
     this.bindRouteCalculator();
+    this.bindFloodCitySearch();
+  },
+
+  bindFloodCitySearch() {
+    const input = document.getElementById('flood-city-search');
+    const button = document.getElementById('flood-city-search-button');
+    const results = document.getElementById('flood-city-search-results');
+    const citySelect = document.getElementById('global-city-select');
+
+    if (!input || !button || !results) return;
+
+    input.addEventListener('input', () => {
+      window.clearTimeout(this.citySearchTimer);
+      const query = input.value.trim();
+
+      if (query.length < 2) {
+        this.citySearchRequestId += 1;
+        this.hideFloodCityResults();
+        return;
+      }
+
+      this.citySearchTimer = window.setTimeout(
+        () => this.searchFloodCities(query),
+        350
+      );
+    });
+
+    button.addEventListener('click', () => {
+      window.clearTimeout(this.citySearchTimer);
+      this.searchFloodCities(input.value.trim());
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        this.hideFloodCityResults();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        const firstResult = results.querySelector('[data-location-index]');
+        if (firstResult && !results.hidden) firstResult.click();
+        else this.searchFloodCities(input.value.trim());
+      }
+    });
+
+    results.addEventListener('click', (event) => {
+      const resultButton = event.target.closest('[data-location-index]');
+      if (!resultButton) return;
+
+      const location = this.citySearchResults[
+        Number(resultButton.dataset.locationIndex)
+      ];
+
+      if (location) this.selectFloodCity(location);
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.flood-city-picker')) {
+        this.hideFloodCityResults();
+      }
+    });
+
+    citySelect?.addEventListener('change', (event) => {
+      this.loadFloodCityByName(event.target.value);
+    });
+
+    const initialCity =
+      localStorage.getItem('wm_selected_city') ||
+      'Chhatrapati Sambhajinagar';
+    this.loadFloodCityByName(initialCity);
+  },
+
+  async searchFloodCities(query) {
+    if (query.length < 2) {
+      this.renderFloodCityMessage('Enter at least 2 characters');
+      return;
+    }
+
+    const requestId = ++this.citySearchRequestId;
+    this.renderFloodCityMessage('Searching locations...');
+
+    try {
+      const response = await API.get(
+        `/api/weather/locations?q=${encodeURIComponent(query)}`
+      );
+      if (requestId !== this.citySearchRequestId) return;
+
+      this.citySearchResults = response.data || [];
+      if (this.citySearchResults.length === 0) {
+        this.renderFloodCityMessage('No matching cities found');
+        return;
+      }
+
+      this.renderFloodCityResults(this.citySearchResults);
+    } catch (error) {
+      if (requestId !== this.citySearchRequestId) return;
+      this.renderFloodCityMessage(this.getFloodCitySearchErrorMessage(error));
+    }
+  },
+
+  getFloodCitySearchErrorMessage(error) {
+    const message = String(error?.message || '').toLowerCase();
+
+    if (message.includes('weather_api_key is not configured')) {
+      return 'WEATHER_API_KEY is missing in Render Environment. Add it and redeploy.';
+    }
+    if (/401|invalid api key|unauthorized/.test(message)) {
+      return 'OpenWeather rejected WEATHER_API_KEY. Check that the key is active and copied correctly.';
+    }
+    if (/403|forbidden/.test(message)) {
+      return 'OpenWeather denied city search. Check Geocoding API access for this key.';
+    }
+    if (/429|rate limit/.test(message)) {
+      return 'OpenWeather rate limit reached. Wait a little, then try again.';
+    }
+    if (/endpoint not found|cannot get \/api\/weather\/locations|404/.test(message)) {
+      return 'City search API is missing. Deploy the latest backend commit on Render.';
+    }
+
+    return 'City search failed. Check Render logs and WEATHER_API_KEY.';
+  },
+
+  renderFloodCityResults(locations) {
+    const results = document.getElementById('flood-city-search-results');
+    if (!results) return;
+
+    results.replaceChildren();
+    locations.forEach((location, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'flood-city-result';
+      button.setAttribute('role', 'option');
+      button.dataset.locationIndex = String(index);
+
+      const name = document.createElement('strong');
+      name.textContent = location.name;
+      const details = document.createElement('span');
+      details.textContent = [
+        location.state,
+        this.getFloodCountryName(location.country)
+      ].filter(Boolean).join(', ');
+
+      button.append(name, details);
+      results.append(button);
+    });
+
+    results.hidden = false;
+    document.getElementById('flood-city-search')?.setAttribute('aria-expanded', 'true');
+  },
+
+  renderFloodCityMessage(message) {
+    const results = document.getElementById('flood-city-search-results');
+    if (!results) return;
+
+    results.replaceChildren();
+    const messageElement = document.createElement('div');
+    messageElement.className = 'flood-city-search-message';
+    messageElement.textContent = message;
+    results.append(messageElement);
+    results.hidden = false;
+    document.getElementById('flood-city-search')?.setAttribute('aria-expanded', 'true');
+  },
+
+  hideFloodCityResults() {
+    const results = document.getElementById('flood-city-search-results');
+    if (results) results.hidden = true;
+    document.getElementById('flood-city-search')?.setAttribute('aria-expanded', 'false');
+  },
+
+  getFloodCountryName(countryCode) {
+    if (!countryCode) return '';
+    try {
+      return new Intl.DisplayNames([navigator.language || 'en'], {
+        type: 'region'
+      }).of(countryCode) || countryCode;
+    } catch (error) {
+      return countryCode;
+    }
+  },
+
+  formatFloodCity(location) {
+    return [
+      location.name,
+      location.state,
+      this.getFloodCountryName(location.country)
+    ].filter(Boolean).join(', ');
+  },
+
+  async selectFloodCity(location) {
+    const requestId = ++this.citySelectionRequestId;
+    const selectedLocation = {
+      ...location,
+      latitude: Number(location.latitude),
+      longitude: Number(location.longitude)
+    };
+
+    this.applyFloodCity(selectedLocation);
+    this.hideFloodCityResults();
+    this.syncFloodCity(selectedLocation);
+
+    const query = new URLSearchParams({
+      city: selectedLocation.name,
+      lat: String(selectedLocation.latitude),
+      lon: String(selectedLocation.longitude),
+      state: selectedLocation.state || '',
+      country: selectedLocation.country || ''
+    });
+
+    try {
+      const response = await API.get(`/api/weather?${query}`);
+      if (requestId !== this.citySelectionRequestId) return;
+      this.renderFloodCityWeather(response.data, selectedLocation);
+    } catch (error) {
+      if (requestId !== this.citySelectionRequestId) return;
+      this.renderFloodCityWeather(null, selectedLocation);
+    }
+  },
+
+  async loadFloodCityByName(city) {
+    if (!city || !this.map) return;
+
+    const requestId = ++this.citySelectionRequestId;
+    this.setFloodWeatherLoading(city);
+
+    try {
+      const response = await API.get(
+        `/api/weather?city=${encodeURIComponent(city)}`
+      );
+      if (requestId !== this.citySelectionRequestId) return;
+
+      const weather = response.data;
+      const location = {
+        name: weather.city,
+        state: weather.state,
+        country: weather.country,
+        latitude: weather.latitude,
+        longitude: weather.longitude
+      };
+
+      this.applyFloodCity(location);
+      this.renderFloodCityWeather(weather, location);
+    } catch (error) {
+      if (requestId !== this.citySelectionRequestId) return;
+      this.renderFloodCityWeather(null, { name: city });
+    }
+  },
+
+  applyFloodCity(location) {
+    const latitude = Number(location.latitude);
+    const longitude = Number(location.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+    this.map.setView([latitude, longitude], 10, { animate: true });
+
+    if (this.cityMarker) this.map.removeLayer(this.cityMarker);
+    const popup = document.createElement('span');
+    popup.textContent = this.formatFloodCity(location);
+    this.cityMarker = L.circleMarker([latitude, longitude], {
+      radius: 7,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: '#00d9ff',
+      fillOpacity: 1
+    }).addTo(this.map).bindPopup(popup);
+
+    const label = this.formatFloodCity(location);
+    const cityName = document.getElementById('flood-selected-city');
+    const searchInput = document.getElementById('flood-city-search');
+    if (cityName) cityName.textContent = label;
+    if (searchInput) searchInput.value = label;
+    this.setFloodWeatherLoading(label);
+  },
+
+  setFloodWeatherLoading(label) {
+    const cityName = document.getElementById('flood-selected-city');
+    const condition = document.getElementById('flood-city-condition');
+    if (cityName) cityName.textContent = label;
+    if (condition) condition.textContent = 'Loading current conditions';
+
+    ['flood-city-temperature', 'flood-city-rainfall', 'flood-city-humidity']
+      .forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = '--';
+      });
+  },
+
+  renderFloodCityWeather(weather, location) {
+    const cityName = document.getElementById('flood-selected-city');
+    const condition = document.getElementById('flood-city-condition');
+
+    if (cityName) {
+      cityName.textContent = this.formatFloodCity({
+        name: weather?.city || location.name,
+        state: weather?.state || location.state,
+        country: weather?.country || location.country
+      });
+    }
+
+    if (!weather) {
+      if (condition) condition.textContent = 'Current weather unavailable';
+      return;
+    }
+
+    if (condition) condition.textContent = weather.condition || 'Current conditions available';
+    const metrics = {
+      'flood-city-temperature': `${Math.round(Number(weather.temperature))}°C`,
+      'flood-city-rainfall': `${Number(weather.rainfall_mm || 0).toFixed(1)} mm`,
+      'flood-city-humidity': `${Math.round(Number(weather.humidity))}%`
+    };
+
+    Object.entries(metrics).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) element.textContent = value;
+    });
+  },
+
+  syncFloodCity(location) {
+    const cityQuery = [location.name, location.country]
+      .filter(Boolean)
+      .join(', ');
+    const citySelect = document.getElementById('global-city-select');
+
+    if (citySelect) {
+      let option = Array.from(citySelect.options).find(
+        (item) => item.value === cityQuery
+      );
+      if (!option) {
+        option = new Option(this.formatFloodCity(location), cityQuery);
+        citySelect.add(option);
+      }
+      citySelect.value = cityQuery;
+    }
+
+    if (window.App && typeof window.App.changeCity === 'function') {
+      window.App.changeCity(cityQuery);
+    } else {
+      localStorage.setItem('wm_selected_city', cityQuery);
+    }
   },
 
   initMap() {
@@ -28,9 +369,9 @@ const SafeRoutesApp = {
       zoomControl: true
     }).setView([19.8762, 75.3433], 12);
 
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
     maxZoom: 18,
-    attribution: 'Tiles © Esri, HERE, Garmin, © OpenStreetMap contributors, GIS User Community'
+    attribution: 'Tiles © Esri, Maxar, Earthstar Geographics, and the GIS User Community'
     }).addTo(this.map);
 
     this.routeLayer = L.layerGroup().addTo(this.map);

@@ -65,6 +65,14 @@ Frontend aur backend ek hi Render Web Service par deploy honge. Alag frontend se
 2. **Logs** tab mein PostgreSQL connection aur server start success check karo.
 3. Browser mein `https://YOUR-SERVICE.onrender.com/api/health` kholo. `YOUR-SERVICE` ki jagah apna Render service name dalo. Response mein `"status":"ONLINE"` hona chahiye.
 4. `https://YOUR-SERVICE.onrender.com/` kholo. Login page dikhna chahiye.
+5. City search endpoint check karne ke liye `https://YOUR-SERVICE.onrender.com/api/weather/locations?q=Mumbai` kholo. Response mein `"success":true` aur city results hone chahiye.
+
+## City Search Error
+
+1. Web Service > **Environment** mein `WEATHER_API_KEY` check karo. Ye active OpenWeather key honi chahiye.
+2. Agar key abhi add ya update ki hai, **Save Changes** karke redeploy complete hone do.
+3. Agar endpoint `Cannot GET` ya `404` de, latest backend commit push karke Render par deploy karo.
+4. Agar response `401` ya `403` de, OpenWeather key aur Geocoding API access check karo. `429` aaye to quota reset hone ka wait karo.
 
 ## 6. Authority Account Banao
 

@@ -169,10 +169,10 @@ const Dashboard = {
       attributionControl: false
     }).setView([19.8762, 75.3433], 11);
 
-    // Esri dark-gray basemap
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
+    // Esri satellite imagery
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
     maxZoom: 18,
-    attribution: 'Tiles © Esri, HERE, Garmin, © OpenStreetMap contributors, GIS User Community'
+    attribution: 'Tiles © Esri, Maxar, Earthstar Geographics, and the GIS User Community'
     }).addTo(this.map);
 
     // Flood Danger Circle / Radar Simulation

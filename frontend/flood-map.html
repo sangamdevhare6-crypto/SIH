@@ -5,6 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Regional Flood Map & Basin Telemetry | WORLD MONITOR</title>
   <meta name="description" content="Interactive flood inundation modeling and river hydrology telemetry across Godavari, Krishna, Narmada and Brahmaputra basins.">
+  <style>
+    .flood-city-picker { position: relative; z-index: 1200; width: 250px; }
+    .flood-city-search-field { display: flex; height: 40px; overflow: hidden; border: 1px solid rgba(0, 217, 255, .35); border-radius: 6px; background: rgba(2, 14, 38, .94); }
+    .flood-city-search-field input { width: 100%; min-width: 0; padding: 0 10px; border: 0; outline: 0; color: #fff; background: transparent; font: 600 .95rem var(--font-rajdhani, sans-serif); }
+    .flood-city-search-field input::placeholder { color: #91a8bc; }
+    .flood-city-search-field button { display: grid; width: 42px; flex: 0 0 42px; place-items: center; border: 0; border-left: 1px solid rgba(0, 217, 255, .25); color: #00d9ff; background: rgba(0, 217, 255, .08); cursor: pointer; }
+    .flood-city-search-results { position: absolute; top: calc(100% + 6px); right: 0; left: 0; max-height: 280px; overflow-y: auto; border: 1px solid rgba(0, 217, 255, .35); border-radius: 6px; background: #061727; box-shadow: 0 12px 28px rgba(0, 0, 0, .4); }
+    .flood-city-search-results[hidden] { display: none; }
+    .flood-city-result { display: block; width: 100%; padding: 10px 12px; border: 0; border-bottom: 1px solid rgba(142, 163, 184, .14); color: #fff; background: transparent; text-align: left; cursor: pointer; }
+    .flood-city-result:hover, .flood-city-result:focus-visible { outline: 0; background: rgba(0, 217, 255, .12); }
+    .flood-city-result strong, .flood-city-result span { display: block; }
+    .flood-city-result span { margin-top: 2px; color: #9aafc2; font-size: .78rem; }
+    .flood-city-search-message { padding: 12px; color: #c3d2df; font-size: .85rem; }
+    .flood-city-weather { position: absolute; top: 14px; right: 14px; z-index: 800; width: 240px; padding: 13px 15px; border: 1px solid rgba(0, 217, 255, .4); border-radius: 6px; color: #fff; background: rgba(3, 19, 34, .94); box-shadow: 0 8px 24px rgba(0, 0, 0, .28); pointer-events: none; }
+    .flood-city-weather-label { color: #00d9ff; font: 700 .68rem var(--font-orbitron, sans-serif); }
+    .flood-city-weather-name { display: block; margin-top: 5px; overflow-wrap: anywhere; font: 700 1rem var(--font-rajdhani, sans-serif); }
+    .flood-city-weather-condition { margin: 2px 0 10px; color: #b8c9d8; font-size: .8rem; text-transform: capitalize; }
+    .flood-city-weather-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .flood-city-weather-metrics span { display: block; color: #91a8bc; font-size: .68rem; }
+    .flood-city-weather-metrics strong { display: block; margin-top: 2px; font: 700 .95rem var(--font-rajdhani, sans-serif); }
+    .flood-data-disclaimer { display: block; margin-top: 10px; color: #f4c979; font-size: .68rem; line-height: 1.35; }
+    @media (max-width: 600px) {
+      .topbar { height: auto !important; min-height: var(--topbar-height); flex-wrap: wrap !important; gap: 8px; padding: 8px 12px !important; }
+      .topbar-left { width: 100%; min-width: 0; flex-wrap: wrap; gap: 8px; }
+      .topbar-left .mobile-menu-btn { flex: 0 0 38px; }
+      .location-selector-wrap, #system-clock { display: none !important; }
+      .flood-city-picker { width: calc(100% - 46px); min-width: 0; flex: 1 1 0; }
+      .topbar-right { width: 100%; min-width: 0; justify-content: flex-end; }
+      .topbar-right > a { display: none; }
+      .flood-city-weather { top: 12px; right: 12px; width: 210px; padding: 10px 12px; }
+    }
+  </style>
 
   <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -110,6 +142,24 @@
           </select>
         </div>
 
+        <div class="flood-city-picker">
+          <div class="flood-city-search-field">
+            <input
+              id="flood-city-search"
+              type="search"
+              placeholder="Search any city or country"
+              aria-label="Search cities worldwide"
+              aria-autocomplete="list"
+              aria-controls="flood-city-search-results"
+              aria-expanded="false"
+              autocomplete="off">
+            <button id="flood-city-search-button" type="button" title="Search city" aria-label="Search city">
+              <i data-lucide="search"></i>
+            </button>
+          </div>
+          <div id="flood-city-search-results" class="flood-city-search-results" role="listbox" hidden></div>
+        </div>
+
         <div style="font-family: var(--font-orbitron); font-size: 0.88rem; color: var(--cyan-vibrant); font-weight: 700;" id="system-clock">
           --:--:-- IST
         </div>
@@ -157,10 +207,7 @@
             River Basin Inundation Modeling, Catchment Surge, and Safe Shelter Havens
           </div>
         </div>
-        <div style="display: flex; gap: 8px;">
-          <span class="badge badge-danger">Very High Risk: Kham Basin</span>
-          <span class="badge badge-warning">High Risk: Paithan Plain</span>
-        </div>
+        <span class="badge badge-cyan">Regional sample flood data</span>
       </div>
 
       <!-- Map + Telemetry Grid -->
@@ -168,6 +215,18 @@
         <!-- Interactive Leaflet Flood Map Container -->
         <div class="hud-panel" style="padding: 0; overflow: hidden; position: relative;">
           <div id="flood-map-container" style="width: 100%; height: 600px; border-radius: var(--radius-md);"></div>
+
+          <aside class="flood-city-weather" aria-live="polite">
+            <span class="flood-city-weather-label">SELECTED CITY WEATHER</span>
+            <strong class="flood-city-weather-name" id="flood-selected-city">Chhatrapati Sambhajinagar</strong>
+            <p class="flood-city-weather-condition" id="flood-city-condition">Loading current conditions</p>
+            <div class="flood-city-weather-metrics">
+              <div><span>Temperature</span><strong id="flood-city-temperature">--</strong></div>
+              <div><span>Rain (1h)</span><strong id="flood-city-rainfall">--</strong></div>
+              <div><span>Humidity</span><strong id="flood-city-humidity">--</strong></div>
+            </div>
+            <small class="flood-data-disclaimer">Flood zones and river values are regional sample data, not verified live warnings for this city.</small>
+          </aside>
 
           <!-- Inundation Legend Overlay -->
           <div style="position: absolute; bottom: 20px; left: 20px; background: rgba(0, 27, 51, 0.9); border: 1px solid var(--border-neon); border-radius: var(--radius-sm); padding: 12px 16px; z-index: 800; backdrop-filter: blur(10px);">
@@ -201,7 +260,7 @@
               </div>
             </div>
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
-              Continuous hydrologic sensor telemetry measured against national danger benchmarks:
+              Regional sample basin readings; these are not live measurements for every selected city:
             </p>
             <div id="river-levels-telemetry-list">
               <!-- Dynamically populated via routes.js -->
@@ -213,7 +272,7 @@
               GATE RELEASE DIRECTIVE:
             </div>
             <p style="font-size: 0.8rem; color: var(--text-secondary);">
-              Jayakwadi Dam spillway discharge increased to 48,500 cusecs. Godavari corridor warning sirens active downstream.
+              Sample only: gate-release values and siren status are not live authority directives.
             </p>
           </div>
         </div>

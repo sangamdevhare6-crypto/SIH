@@ -31,6 +31,8 @@ const RadarApp = {
 
     satelliteTileLayer: null,
 
+    cityMarker: null,
+
     // LIVE RADAR TILE LAYER
     liveRadarLayer: null,
 
@@ -234,8 +236,31 @@ const RadarApp = {
             input?.setAttribute('aria-expanded', 'true');
         } catch (error) {
             if (requestId !== this.citySearchRequestId) return;
-            this.renderCitySearchMessage('City search unavailable. Check weather API setup.');
+            this.renderCitySearchMessage(this.getCitySearchErrorMessage(error));
         }
+    },
+
+
+    getCitySearchErrorMessage(error) {
+        const message = String(error?.message || '').toLowerCase();
+
+        if (message.includes('weather_api_key is not configured')) {
+            return 'WEATHER_API_KEY is missing in Render Environment. Add it and redeploy.';
+        }
+        if (/401|invalid api key|unauthorized/.test(message)) {
+            return 'OpenWeather rejected WEATHER_API_KEY. Check that the key is active and copied correctly.';
+        }
+        if (/403|forbidden/.test(message)) {
+            return 'OpenWeather denied city search. Check Geocoding API access for this key.';
+        }
+        if (/429|rate limit/.test(message)) {
+            return 'OpenWeather rate limit reached. Wait a little, then try again.';
+        }
+        if (/endpoint not found|cannot get \/api\/weather\/locations|404/.test(message)) {
+            return 'City search API is missing. Deploy the latest backend commit on Render.';
+        }
+
+        return 'City search failed. Check Render logs and WEATHER_API_KEY.';
     },
 
 
@@ -386,9 +411,26 @@ const RadarApp = {
         ) {
             this.map.setView(
                 [location.latitude, location.longitude],
-                7,
+                11,
                 { animate: true }
             );
+
+            if (this.cityMarker) {
+                this.map.removeLayer(this.cityMarker);
+            }
+
+            const markerLabel = document.createElement('span');
+            markerLabel.textContent = this.formatCityLabel(location);
+            this.cityMarker = L.circleMarker(
+                [location.latitude, location.longitude],
+                {
+                    radius: 8,
+                    color: '#ffffff',
+                    weight: 2,
+                    fillColor: '#00d9ff',
+                    fillOpacity: 1
+                }
+            ).addTo(this.map).bindPopup(markerLabel);
         }
 
         const cityName = this.formatCityLabel(location);
@@ -609,12 +651,12 @@ const RadarApp = {
 
 
             /*
-             * Center around Maharashtra / India.
+             * Start at the default selected city.
              */
 
             this.map.setView(
                 [19.8762, 75.3433],
-                7
+                11
             );
 
 
@@ -631,13 +673,13 @@ const RadarApp = {
         }
 
 
-        /* ======================================================
-           DARK CARTO BASEMAP
-        ====================================================== */
+          /* ======================================================
+              SATELLITE BASEMAP
+          ====================================================== */
 
         this.darkTileLayer =
             L.tileLayer(
-                'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
                 {
                     maxZoom: 18,
 
@@ -650,7 +692,7 @@ const RadarApp = {
                     keepBuffer: 2,
 
                     attribution:
-                        'Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors, GIS User Community'
+                        'Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community'
                 }
             );
 
@@ -683,7 +725,7 @@ const RadarApp = {
                     keepBuffer: 2,
 
                     attribution:
-                        'Tiles &copy; Esri'
+                        'Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community'
                 }
             );
 
