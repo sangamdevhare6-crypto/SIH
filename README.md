@@ -129,7 +129,7 @@ world-monitor/
 │   │   └── logger.js               # Colored Terminal Logger
 │   └── scripts/
 │       ├── seed.js                 # PostgreSQL Seeding Script
-│       └── verify-all.js           # Automated E2E Test Suite (20 Tests)
+│       └── verify-all.js           # Automated E2E Test Suite (29 Tests)
 │
 ├── database/
 │   ├── schema.sql                  # PostgreSQL Tables, Foreign Keys, Indexes
@@ -226,7 +226,7 @@ If using a live PostgreSQL instance (e.g., Neon, Supabase, Railway, or local Pos
 
 ## 🧪 8. Automated End-to-End Testing
 
-A smoke test suite checks API responses, city search, location-specific weather, live radar tiles, and role-based authorization:
+A smoke test suite checks API responses, admin user totals/access, city search, location-specific weather, live radar tiles, and role-based authorization:
 
 ```bash
 npm test
@@ -237,13 +237,22 @@ Test Results Output:
   ✅ PASS: System Health Check Endpoint
   ✅ PASS: Citizen Login with Password Verification
   ✅ PASS: Authority Login with Role Authorization
-   ✅ PASS: Dashboard returns live weather KPIs
+  ✅ PASS: Admin user list requires authentication
+  ✅ PASS: Citizen cannot access admin user list
+  ✅ PASS: Additional authority account can be created in development
+  ✅ PASS: Only configured admin email can access admin user list
+  ✅ PASS: Authority admin dashboard returns account and login counts
+  ✅ PASS: New citizen registration succeeds
+  ✅ PASS: Registration updates account totals, not login totals
+  ✅ PASS: Newly registered citizen can log in
+  ✅ PASS: Successful login updates admin login metrics
+  ✅ PASS: Dashboard returns live weather KPIs
   ✅ PASS: Live Weather Service & Forecast
-   ✅ PASS: Worldwide city search returns Indian locations
-   ✅ PASS: Selected city weather uses its exact coordinates
+  ✅ PASS: Worldwide city search returns Indian locations
+  ✅ PASS: Selected city weather uses its exact coordinates
   ✅ PASS: Nowcast Short-Term Prediction Curve & Risk Assessment
-   ✅ PASS: Radar metadata endpoint
-   ✅ PASS: RainViewer radar tile for Chhatrapati Sambhajinagar
+  ✅ PASS: Radar metadata endpoint
+  ✅ PASS: RainViewer radar tile for Chhatrapati Sambhajinagar
   ✅ PASS: Emergency Alerts Query & Risk Levels
   ✅ PASS: Authority Emergency Alert Broadcasting
   ✅ PASS: Role-Based Access Control: Citizen Forbidden From Broadcasting Authority Alerts
@@ -256,7 +265,7 @@ Test Results Output:
   ✅ PASS: Automated CSV / Dossier Export Download
 
 ==================================================
-TEST RESULTS: 20 Passed, 0 Failed
+TEST RESULTS: 29 Passed, 0 Failed
 ==================================================
 ```
 

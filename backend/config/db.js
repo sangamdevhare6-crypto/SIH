@@ -32,6 +32,7 @@ const memoryStore = {
       created_at: new Date('2026-01-01')
     }
   ],
+  login_events: [],
   citizen_profiles: [
     {
       id: 'd0000000-0000-0000-0000-000000000001',
@@ -570,6 +571,16 @@ async function initDatabase() {
         }
         console.log('✅ [DATABASE] PostgreSQL schema initialized.');
       }
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS user_login_events (
+          id BIGSERIAL PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          logged_in_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_user_login_events_user_time
+          ON user_login_events(user_id, logged_in_at DESC);
+      `);
     } catch (err) {
       isPostgresLive = false;
       if (client) client.release();

@@ -8,16 +8,14 @@ const {
   authenticate
 } = require('../middleware/authMiddleware');
 
-const {
-  requireRole
-} = require('../middleware/roleMiddleware');
+const { requireConfiguredAdmin } = require('../middleware/roleMiddleware');
 
 
 // Admin users API
 router.get(
   '/users',
   authenticate,
-  requireRole('AUTHORITY'),
+  requireConfiguredAdmin,
   getAdminUsers
 );
 

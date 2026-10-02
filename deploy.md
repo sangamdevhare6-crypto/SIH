@@ -51,6 +51,7 @@ Frontend aur backend ek hi Render Web Service par deploy honge. Alag frontend se
    | Key | Value |
    | --- | --- |
    | `NODE_ENV` | `production` |
+   | `ADMIN_EMAIL` | Admin account ka exact email; neeche isi email se account banao |
    | `DATABASE_URL` | Step 2 ka Internal Database URL |
    | `JWT_SECRET` | Step 3 mein generate ki hui value |
    | `CORS_ORIGIN` | `https://world-monitor.onrender.com` |
@@ -84,7 +85,8 @@ Frontend aur backend ek hi Render Web Service par deploy honge. Alag frontend se
    ```
 
 3. Name, email, department, designation, official ID aur kam-se-kam 12 characters ka password enter karo.
-4. `Authority account created` dikhne ke baad deployed site par us account se login karo.
+4. Email Render ke `ADMIN_EMAIL` se bilkul match hona chahiye. Sirf ye account Admin Dashboard ke registered users dekh sakta hai.
+5. `Authority account created` dikhne ke baad deployed site par us account se login karo.
 
 ## 7. Final Test Karo
 

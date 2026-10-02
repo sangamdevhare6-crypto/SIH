@@ -54,7 +54,7 @@
       $('usersBody').innerHTML = `
         <tr>
           <td
-            colspan="6"
+            colspan="8"
             class="empty"
           >
             No registered users found.
@@ -95,6 +95,10 @@
 
           </td>
 
+          <td>${Number(user.login_count) || 0}</td>
+
+          <td>${formatDate(user.last_login_at)}</td>
+
           <td>
 
             <span
@@ -127,12 +131,58 @@
   }
 
 
+  function showAdminAccessMessage(message, signInLink = false) {
+    $('statusText').textContent = 'Access required';
+    $('totalUsers').textContent = '—';
+    $('activeUsers').textContent = '—';
+    $('citizens').textContent = '—';
+    $('authorities').textContent = '—';
+    $('loggedInUsers').textContent = '—';
+    $('totalLogins').textContent = '—';
+
+    const signInAction = signInLink
+      ? '<a href="/login.html?redirect=%2Fadmin.html">Sign in with the configured admin account</a>'
+      : '';
+
+    $('usersBody').innerHTML = `
+      <tr>
+        <td colspan="8" class="empty error">
+          ${escapeHtml(message)} ${signInAction}
+        </td>
+      </tr>
+    `;
+  }
+
+
 
   // Load admin dashboard
   async function loadAdmin() {
 
     $('statusText').textContent =
       'Loading…';
+
+    const token = API.getToken();
+    let user = null;
+
+    try {
+      user = JSON.parse(localStorage.getItem('wm_user_data') || 'null');
+    } catch (_) {}
+
+    if (!token || !user) {
+      showAdminAccessMessage(
+        'Sign in to view registered accounts.',
+        true
+      );
+      return;
+    }
+
+    if (String(user.role || '').toUpperCase() !== 'AUTHORITY') {
+      showAdminAccessMessage(
+        'This page requires an authority account. Sign out and sign in with your admin account.',
+        true
+      );
+      return;
+    }
 
 
     try {
@@ -162,6 +212,12 @@
       $('authorities').textContent =
         stats.authorities ?? 0;
 
+      $('loggedInUsers').textContent =
+        stats.logged_in_users ?? 0;
+
+      $('totalLogins').textContent =
+        stats.total_logins ?? 0;
+
 
       // Users
 
@@ -184,26 +240,13 @@
       );
 
 
-      $('statusText').textContent =
-        'Access denied / error';
-
-
-      $('usersBody').innerHTML = `
-
-        <tr>
-
-          <td
-            colspan="6"
-            class="empty error"
-          >
-
-            ${escapeHtml(error.message)}
-
-          </td>
-
-        </tr>
-
-      `;
+      const isForbidden = /403|access denied/i.test(error.message);
+      showAdminAccessMessage(
+        isForbidden
+          ? 'This account is not configured as the admin. Sign in with the configured admin account.'
+          : error.message || 'Could not load registered accounts.',
+        isForbidden
+      );
 
     }
 
@@ -249,5 +292,11 @@
 
   // Initial load
   loadAdmin();
+
+  window.setInterval(() => {
+    if (!document.hidden && API.getToken()) {
+      loadAdmin();
+    }
+  }, 30000);
 
 })();

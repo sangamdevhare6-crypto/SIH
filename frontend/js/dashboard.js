@@ -10,11 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
 const Dashboard = {
   map: null,
   radarLayer: null,
+  currentLocationMarker: null,
 
   async init() {
     this.updateUserGreeting();
     await this.loadData();
     this.initMiniMap();
+
+    window.addEventListener('wm:user_location', (event) => {
+      this.showCurrentLocation(event.detail);
+    });
 
     // Listen for city changes or live telemetry pulses
     window.addEventListener('wm:city_changed', (e) => {
@@ -166,13 +171,19 @@ const Dashboard = {
     // Center on Chhatrapati Sambhajinagar
     this.map = L.map('mini-dashboard-map', {
       zoomControl: false,
-      attributionControl: false
+      attributionControl: true
     }).setView([19.8762, 75.3433], 11);
 
     // Esri satellite imagery
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
     maxZoom: 18,
     attribution: 'Tiles © Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    }).addTo(this.map);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 18,
+      pane: 'overlayPane',
+      attribution: 'Place labels © Esri, HERE, Garmin, FAO, NOAA, USGS, EPA, NPS'
     }).addTo(this.map);
 
     // Flood Danger Circle / Radar Simulation
@@ -211,6 +222,48 @@ const Dashboard = {
     const c = coordsMap[city] || coordsMap['Chhatrapati Sambhajinagar'];
     if (this.map) {
       this.map.setView(c, 11);
+    }
+  },
+
+  async showCurrentLocation(location) {
+    const latitude = Number(location.latitude);
+    const longitude = Number(location.longitude);
+    if (!this.map || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+    this.map.setView([latitude, longitude], 14, { animate: true });
+    if (this.currentLocationMarker) this.map.removeLayer(this.currentLocationMarker);
+
+    const markerLabel = document.createElement('span');
+    markerLabel.textContent = 'Your current location';
+    this.currentLocationMarker = L.circleMarker([latitude, longitude], {
+      radius: 8,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: '#00d9ff',
+      fillOpacity: 1
+    }).addTo(this.map).bindPopup(markerLabel);
+
+    const locationTitle = document.getElementById('dashboard-location-title');
+    if (locationTitle) locationTitle.textContent = 'Your current location';
+
+    try {
+      const query = new URLSearchParams({
+        city: 'Your location',
+        lat: String(latitude),
+        lon: String(longitude)
+      });
+      const response = await API.get(`/api/weather?${query}`);
+      const weather = response.data;
+      this.renderKPIs({
+        rainfall_mm: weather.rainfall_mm,
+        temperature: weather.temperature,
+        humidity: weather.humidity,
+        wind_speed: weather.wind_speed,
+        pressure: weather.pressure,
+        condition: weather.condition
+      });
+    } catch (error) {
+      console.error('Could not load weather for current location:', error);
     }
   }
 };

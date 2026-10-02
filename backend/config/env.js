@@ -5,7 +5,11 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const requiredProductionVariables = ['DATABASE_URL', 'JWT_SECRET', 'CORS_ORIGIN'];
+const ADMIN_EMAIL = String(
+  process.env.ADMIN_EMAIL ||
+  (NODE_ENV === 'production' ? '' : 'admin@worldmonitor.gov.in')
+).trim().toLowerCase();
+const requiredProductionVariables = ['DATABASE_URL', 'JWT_SECRET', 'CORS_ORIGIN', 'ADMIN_EMAIL'];
 const missingProductionVariables = requiredProductionVariables.filter(
   (name) => !process.env[name]
 );
@@ -26,6 +30,7 @@ const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5000')
 module.exports = {
   PORT: process.env.PORT || 5000,
   NODE_ENV,
+  ADMIN_EMAIL,
   DATABASE_URL: process.env.DATABASE_URL || '',
   JWT_SECRET: process.env.JWT_SECRET || 'local-development-only-change-me',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',

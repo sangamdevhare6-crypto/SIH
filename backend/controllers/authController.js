@@ -249,6 +249,18 @@ async function login(req, res, next) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
+    if (isPostgresLive()) {
+      await getPool().query(
+        'INSERT INTO user_login_events (user_id) VALUES ($1)',
+        [user.id]
+      );
+    } else {
+      memoryStore.login_events.push({
+        user_id: user.id,
+        logged_in_at: new Date()
+      });
+    }
+
     // Role check warning if user tried to login on mismatched portal
     if (role_hint && role_hint.toUpperCase() !== user.role) {
       // Still allow but let client redirect properly or return message

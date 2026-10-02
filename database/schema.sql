@@ -21,6 +21,15 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- 2. Citizen Profiles
+CREATE TABLE IF NOT EXISTS user_login_events (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    logged_in_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_login_events_user_time
+    ON user_login_events(user_id, logged_in_at DESC);
+
 CREATE TABLE IF NOT EXISTS citizen_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

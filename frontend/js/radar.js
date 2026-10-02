@@ -31,6 +31,8 @@ const RadarApp = {
 
     satelliteTileLayer: null,
 
+    placeLabelsLayer: null,
+
     cityMarker: null,
 
     // LIVE RADAR TILE LAYER
@@ -203,6 +205,35 @@ const RadarApp = {
             citySelect.addEventListener('change', (event) => {
                 this.loadCityByName(event.target.value);
             });
+        }
+
+        window.addEventListener('wm:user_location', (event) => {
+            this.loadCurrentLocation(event.detail);
+        });
+    },
+
+
+    async loadCurrentLocation(location) {
+        const selectedLocation = {
+            name: 'Your location',
+            latitude: Number(location.latitude),
+            longitude: Number(location.longitude),
+            zoom: 14
+        };
+
+        this.applyRadarLocation(selectedLocation);
+
+        const query = new URLSearchParams({
+            city: selectedLocation.name,
+            lat: String(selectedLocation.latitude),
+            lon: String(selectedLocation.longitude)
+        });
+
+        try {
+            const response = await API.get(`/api/weather?${query}`);
+            this.renderCityWeather(response.data, selectedLocation);
+        } catch (error) {
+            this.renderCityWeather(null, selectedLocation);
         }
     },
 
@@ -411,7 +442,7 @@ const RadarApp = {
         ) {
             this.map.setView(
                 [location.latitude, location.longitude],
-                11,
+                location.zoom || 11,
                 { animate: true }
             );
 
@@ -728,6 +759,21 @@ const RadarApp = {
                         'Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community'
                 }
             );
+
+        this.placeLabelsLayer =
+            L.tileLayer(
+                'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+                {
+                    maxZoom: 18,
+
+                    minZoom: 2,
+
+                    pane: 'overlayPane',
+
+                    attribution:
+                        'Place labels &copy; Esri, HERE, Garmin, FAO, NOAA, USGS, EPA, NPS'
+                }
+            ).addTo(this.map);
 
 
         /* ======================================================

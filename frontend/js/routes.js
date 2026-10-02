@@ -21,9 +21,36 @@ const SafeRoutesApp = {
 
   async init() {
     this.initMap();
+    window.addEventListener('wm:user_location', (event) => {
+      this.loadCurrentLocation(event.detail);
+    });
     await this.loadMapLayers();
     this.bindRouteCalculator();
     this.bindFloodCitySearch();
+  },
+
+  async loadCurrentLocation(location) {
+    const selectedLocation = {
+      name: 'Your location',
+      latitude: Number(location.latitude),
+      longitude: Number(location.longitude),
+      zoom: 14
+    };
+
+    this.applyFloodCity(selectedLocation);
+
+    const query = new URLSearchParams({
+      city: selectedLocation.name,
+      lat: String(selectedLocation.latitude),
+      lon: String(selectedLocation.longitude)
+    });
+
+    try {
+      const response = await API.get(`/api/weather?${query}`);
+      this.renderFloodCityWeather(response.data, selectedLocation);
+    } catch (error) {
+      this.renderFloodCityWeather(null, selectedLocation);
+    }
   },
 
   bindFloodCitySearch() {
@@ -273,7 +300,7 @@ const SafeRoutesApp = {
     const longitude = Number(location.longitude);
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
-    this.map.setView([latitude, longitude], 10, { animate: true });
+    this.map.setView([latitude, longitude], location.zoom || 10, { animate: true });
 
     if (this.cityMarker) this.map.removeLayer(this.cityMarker);
     const popup = document.createElement('span');
@@ -372,6 +399,12 @@ const SafeRoutesApp = {
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
     maxZoom: 18,
     attribution: 'Tiles © Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    }).addTo(this.map);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 18,
+      pane: 'overlayPane',
+      attribution: 'Place labels © Esri, HERE, Garmin, FAO, NOAA, USGS, EPA, NPS'
     }).addTo(this.map);
 
     this.routeLayer = L.layerGroup().addTo(this.map);

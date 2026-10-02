@@ -86,7 +86,102 @@ async function runTests() {
     assert(authLogin.status === 200 && authLogin.body.success && authLogin.body.user.role === 'AUTHORITY', 'Authority Login with Role Authorization');
     const authorityToken = authLogin.body.token;
 
-    // 4. Dashboard KPIs & Telemetry
+    // 4. Admin user management is authority-only and includes account totals
+    const anonymousAdminUsers = await request('GET', '/api/admin/users');
+    assert(anonymousAdminUsers.status === 401, 'Admin user list requires authentication');
+
+    const citizenAdminUsers = await request(
+      'GET',
+      '/api/admin/users',
+      null,
+      { Authorization: `Bearer ${citizenToken}` }
+    );
+    assert(citizenAdminUsers.status === 403, 'Citizen cannot access admin user list');
+
+    const otherAuthority = await request('POST', '/api/auth/register/authority', {
+      full_name: 'Other Authority Check',
+      email: `other-authority-${Date.now()}@example.test`,
+      department: 'Test Department',
+      designation: 'Test Officer',
+      password: 'AuthorityTestPass123'
+    });
+    assert(
+      otherAuthority.status === 201 && otherAuthority.body.user.role === 'AUTHORITY',
+      'Additional authority account can be created in development'
+    );
+
+    const otherAuthorityAdminUsers = await request(
+      'GET',
+      '/api/admin/users',
+      null,
+      { Authorization: `Bearer ${otherAuthority.body.token}` }
+    );
+    assert(otherAuthorityAdminUsers.status === 403, 'Only configured admin email can access admin user list');
+
+    const authorityAdminUsers = await request(
+      'GET',
+      '/api/admin/users',
+      null,
+      { Authorization: `Bearer ${authorityToken}` }
+    );
+    assert(
+      authorityAdminUsers.status === 200 &&
+      authorityAdminUsers.body.stats.total_users >= 2 &&
+      authorityAdminUsers.body.stats.logged_in_users === 2 &&
+      authorityAdminUsers.body.stats.total_logins === 2 &&
+      authorityAdminUsers.body.users.length >= 2 &&
+      authorityAdminUsers.body.users.some(user =>
+        user.email === 'admin@worldmonitor.gov.in' &&
+        user.login_count === 1 &&
+        Boolean(user.last_login_at)
+      ),
+      'Authority admin dashboard returns account and login counts'
+    );
+
+    const newCitizenEmail = `admin-count-${Date.now()}@example.test`;
+    const newCitizen = await request('POST', '/api/auth/register/citizen', {
+      full_name: 'Admin Count Check',
+      email: newCitizenEmail,
+      password: 'CitizenTestPass123'
+    });
+    assert(newCitizen.status === 201 && newCitizen.body.success, 'New citizen registration succeeds');
+
+    const refreshedAdminUsers = await request(
+      'GET',
+      '/api/admin/users',
+      null,
+      { Authorization: `Bearer ${authorityToken}` }
+    );
+    assert(
+      refreshedAdminUsers.status === 200 &&
+      refreshedAdminUsers.body.stats.total_users === authorityAdminUsers.body.stats.total_users + 1 &&
+      refreshedAdminUsers.body.stats.logged_in_users === authorityAdminUsers.body.stats.logged_in_users &&
+      refreshedAdminUsers.body.stats.total_logins === authorityAdminUsers.body.stats.total_logins &&
+      refreshedAdminUsers.body.users.some(user => user.email === newCitizenEmail),
+      'Registration updates account totals, not login totals'
+    );
+
+    const newCitizenLogin = await request('POST', '/api/auth/login', {
+      identifier: newCitizenEmail,
+      password: 'CitizenTestPass123',
+      role_hint: 'CITIZEN'
+    });
+    assert(newCitizenLogin.status === 200, 'Newly registered citizen can log in');
+
+    const loginMetrics = await request(
+      'GET',
+      '/api/admin/users',
+      null,
+      { Authorization: `Bearer ${authorityToken}` }
+    );
+    assert(
+      loginMetrics.status === 200 &&
+      loginMetrics.body.stats.logged_in_users === authorityAdminUsers.body.stats.logged_in_users + 1 &&
+      loginMetrics.body.stats.total_logins === authorityAdminUsers.body.stats.total_logins + 1,
+      'Successful login updates admin login metrics'
+    );
+
+    // 5. Dashboard KPIs & Telemetry
     const dashboard = await request('GET', '/api/dashboard?city=Chhatrapati%20Sambhajinagar');
     assert(dashboard.status === 200 && Number.isFinite(dashboard.body.kpis.temperature), 'Dashboard returns live weather KPIs');
 

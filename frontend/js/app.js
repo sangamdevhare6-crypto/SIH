@@ -17,6 +17,7 @@ const App = {
     this.setupClock();
     this.setupLogoutModal();
     this.setupLocationSelector();
+    this.setupMapLocationButtons();
 
     // Initialize real-time notifications if authenticated or on app pages
     if (window.NotificationManager) {
@@ -160,6 +161,75 @@ const App = {
             }
         });
     }
+},
+
+ setupMapLocationButtons() {
+  document.querySelectorAll('[data-use-current-location]').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (!window.isSecureContext) {
+        window.showToast(
+          'Open this site over HTTPS to use your location.',
+          'danger'
+        );
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        window.showToast(
+          'Location is not supported by this browser.',
+          'danger'
+        );
+        return;
+      }
+
+      window.showToast(
+        'Allow location access in your browser to show your current position.',
+        'info'
+      );
+      button.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          };
+
+          window.dispatchEvent(
+            new CustomEvent('wm:user_location', { detail: location })
+          );
+          button.disabled = false;
+          window.showToast('Your location found. Centering the map.', 'success');
+        },
+        (error) => {
+          button.disabled = false;
+
+          if (error.code === error.PERMISSION_DENIED) {
+            window.showToast(
+              'Location is blocked. Turn on location permission for this site in browser settings, then try again.',
+              'danger'
+            );
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            window.showToast(
+              'Location is unavailable. Turn on your device location and try again.',
+              'danger'
+            );
+          } else {
+            window.showToast(
+              'Location request timed out. Try again.',
+              'danger'
+            );
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 60000
+        }
+      );
+    });
+  });
 },
 
 

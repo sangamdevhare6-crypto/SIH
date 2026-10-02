@@ -9,11 +9,14 @@ async function getAdminUsers(req, res, next) {
       // User statistics
       const stats = await pool.query(`
         SELECT
-          COUNT(*)::int AS total_users,
-          COUNT(*) FILTER (WHERE is_active = true)::int AS active_users,
-          COUNT(*) FILTER (WHERE role = 'CITIZEN')::int AS citizens,
-          COUNT(*) FILTER (WHERE role = 'AUTHORITY')::int AS authorities
+          COUNT(DISTINCT users.id)::int AS total_users,
+          COUNT(DISTINCT users.id) FILTER (WHERE users.is_active = true)::int AS active_users,
+          COUNT(DISTINCT users.id) FILTER (WHERE users.role = 'CITIZEN')::int AS citizens,
+          COUNT(DISTINCT users.id) FILTER (WHERE users.role = 'AUTHORITY')::int AS authorities,
+          COUNT(DISTINCT user_login_events.user_id)::int AS logged_in_users,
+          COUNT(user_login_events.id)::int AS total_logins
         FROM users
+        LEFT JOIN user_login_events ON user_login_events.user_id = users.id
       `);
 
       // Latest registered users
@@ -25,9 +28,11 @@ async function getAdminUsers(req, res, next) {
           phone,
           role,
           is_active,
-          created_at
+          created_at,
+          (SELECT COUNT(*)::int FROM user_login_events events WHERE events.user_id = users.id) AS login_count,
+          (SELECT MAX(events.logged_in_at) FROM user_login_events events WHERE events.user_id = users.id) AS last_login_at
         FROM users
-        ORDER BY created_at DESC
+        ORDER BY users.created_at DESC
         LIMIT 100
       `);
 
@@ -43,6 +48,7 @@ async function getAdminUsers(req, res, next) {
     const users = [...memoryStore.users].sort(
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
+    const loginEvents = memoryStore.login_events || [];
 
     const stats = {
       total_users: users.length,
@@ -57,7 +63,11 @@ async function getAdminUsers(req, res, next) {
 
       authorities: users.filter(
         user => String(user.role).toUpperCase() === 'AUTHORITY'
-      ).length
+      ).length,
+
+      logged_in_users: new Set(loginEvents.map(event => event.user_id)).size,
+
+      total_logins: loginEvents.length
     };
 
     return res.json({
@@ -67,7 +77,17 @@ async function getAdminUsers(req, res, next) {
       // Password kabhi frontend ko mat bhejna
       users: users
         .slice(0, 100)
-        .map(({ password_hash, ...user }) => user)
+        .map(({ password_hash, ...user }) => {
+          const userLogins = loginEvents
+            .filter(event => event.user_id === user.id)
+            .sort((a, b) => new Date(b.logged_in_at) - new Date(a.logged_in_at));
+
+          return {
+            ...user,
+            login_count: userLogins.length,
+            last_login_at: userLogins[0]?.logged_in_at || null
+          };
+        })
     });
 
   } catch (error) {

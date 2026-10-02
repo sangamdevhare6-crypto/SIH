@@ -145,7 +145,7 @@
           </strong>
 
           <small>
-            Currently active
+            Enabled accounts
           </small>
 
         </article>
@@ -182,6 +182,18 @@
             Authority accounts
           </small>
 
+        </article>
+
+        <article class="stat-card">
+          <span>Users Logged In</span>
+          <strong id="loggedInUsers">—</strong>
+          <small>Unique accounts with a successful login</small>
+        </article>
+
+        <article class="stat-card">
+          <span>Total Logins</span>
+          <strong id="totalLogins">—</strong>
+          <small>Successful sign-in events</small>
         </article>
 
       </section>
@@ -231,6 +243,8 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Role</th>
+                <th>Logins</th>
+                <th>Last Login</th>
                 <th>Status</th>
                 <th>Created</th>
               </tr>
@@ -242,7 +256,7 @@
 
               <tr>
                 <td
-                  colspan="6"
+                  colspan="8"
                   class="empty"
                 >
                   Loading users…

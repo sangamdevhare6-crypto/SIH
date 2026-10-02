@@ -1,3 +1,5 @@
+const config = require('../config/env');
+
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
@@ -21,6 +23,32 @@ function requireRole(...allowedRoles) {
   };
 }
 
+function requireConfiguredAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Authentication required'
+    });
+  }
+
+  const userEmail = String(req.user.email || '').trim().toLowerCase();
+  const userRole = String(req.user.role || '').trim().toUpperCase();
+
+  if (
+    userRole !== 'AUTHORITY' ||
+    !config.ADMIN_EMAIL ||
+    userEmail !== config.ADMIN_EMAIL
+  ) {
+    return res.status(403).json({
+      success: false,
+      error: 'Admin dashboard access is restricted to the configured admin account'
+    });
+  }
+
+  next();
+}
+
 module.exports = {
-  requireRole
+  requireRole,
+  requireConfiguredAdmin
 };

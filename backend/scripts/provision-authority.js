@@ -63,6 +63,10 @@ async function provisionAuthority() {
   const officialId = await prompt('Official ID: ');
   const password = await prompt('Initial password (min 12 characters): ', true);
 
+  if (config.NODE_ENV === 'production' && email !== config.ADMIN_EMAIL) {
+    throw new Error('Authority email must match the configured ADMIN_EMAIL');
+  }
+
   if (!fullName || !email || !department || !designation || password.length < 12) {
     throw new Error('Name, email, department, designation, and a 12-character password are required');
   }
@@ -76,6 +80,15 @@ async function provisionAuthority() {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+      const existingAdmin = await client.query(
+        'SELECT id FROM users WHERE LOWER(email) = $1',
+        [email]
+      );
+
+      if (existingAdmin.rows.length > 0) {
+        throw new Error('The configured admin account already exists; provisioning is one-time');
+      }
+
       const passwordHash = await hashPassword(password);
       const userResult = await client.query(
         `INSERT INTO users (email, password_hash, full_name, phone, role)
