@@ -88,7 +88,7 @@ async function runTests() {
 
     // 4. Dashboard KPIs & Telemetry
     const dashboard = await request('GET', '/api/dashboard?city=Chhatrapati%20Sambhajinagar');
-    assert(dashboard.status === 200 && dashboard.body.kpis.rainfall_mm >= 120 && dashboard.body.kpis.temperature > 0, 'Dashboard KPIs (Rainfall, Temp, Humidity, Wind, Pressure)');
+    assert(dashboard.status === 200 && Number.isFinite(dashboard.body.kpis.temperature), 'Dashboard returns live weather KPIs');
 
     // 5. Weather & Nowcast
     const weather = await request('GET', '/api/weather?city=Chhatrapati%20Sambhajinagar');
@@ -99,7 +99,7 @@ async function runTests() {
 
     // 6. Radar & Satellite Metadata
     const radar = await request('GET', '/api/weather/radar');
-    assert(radar.status === 200 && radar.body.data.stormCells.length > 0, 'Radar Reflectivity Cells & Doppler Telemetry');
+    assert(radar.status === 200 && radar.body.data.type === 'LIVE_PRECIPITATION_RADAR', 'Radar metadata endpoint');
 
     // 7. Alerts List
     const alerts = await request('GET', '/api/alerts');

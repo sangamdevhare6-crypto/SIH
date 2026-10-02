@@ -167,18 +167,7 @@ Copy the template environment file:
 ```bash
 cp .env.example .env
 ```
-Default `.env` configuration:
-```env
-PORT=5000
-NODE_ENV=development
-DATABASE_URL=
-JWT_SECRET=world_monitor_super_secure_jwt_secret_key_2026_!@#
-JWT_EXPIRES_IN=7d
-WEATHER_API_KEY=demo_key
-MAP_API_KEY=demo_key
-RADAR_API_KEY=demo_key
-CORS_ORIGIN=*
-```
+Use the values in `.env.example` for local development. Production requires explicit database, JWT secret, and CORS origin settings; see [deploy.md](deploy.md).
 *(Leave `DATABASE_URL` empty to run in zero-config mode, or provide your Neon/Supabase PostgreSQL connection string).*
 
 ### 4. Run the Full-Stack Application
@@ -208,6 +197,8 @@ For quick evaluation, click the demo buttons on the login screen or enter manual
 | **AUTHORITY** | `admin@worldmonitor.gov.in` | `AdminPassword@123` | Broadcast alerts, update citizen reports, inspect sensors, manage emergency assets |
 | **CITIZEN** | `citizen@worldmonitor.org` | `CitizenPassword@123` | Submit incident reports, view own reports, plan safe evacuation routes, receive warnings |
 
+These demo credentials are for local evaluation only. Production databases are not seeded with demo accounts.
+
 ---
 
 ## 🗄️ 7. Database Setup (PostgreSQL)
@@ -221,7 +212,7 @@ If using a live PostgreSQL instance (e.g., Neon, Supabase, Railway, or local Pos
    ```env
    DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/world_monitor
    ```
-3. Run the database seeder:
+3. For a disposable local database only, run the demo seeder. It truncates application tables before inserting demo records; never use it in production.
    ```bash
    npm run seed
    ```
@@ -235,10 +226,10 @@ If using a live PostgreSQL instance (e.g., Neon, Supabase, Railway, or local Pos
 
 ## 🧪 8. Automated End-to-End Testing
 
-A complete automated test suite is provided to verify all 17 system routes, role-based authorization blocks, and calculations:
+A smoke test suite checks API responses, authentication, and role-based authorization:
 
 ```bash
-node backend/scripts/verify-all.js
+npm test
 ```
 
 Test Results Output:
@@ -316,7 +307,9 @@ TEST RESULTS: 17 Passed, 0 Failed
 
 ## ☁️ 10. Production Deployment Guide
 
-### Option A: Full-Stack Deployment (Render / Railway / Fly.io)
+Use [deploy.md](deploy.md) for the required deployment steps and environment variables. The recommended setup deploys frontend and backend together as one Node.js service. The notes below are abbreviated examples only.
+
+### Single-service examples (Render / Railway / Fly.io)
 Because the Express backend serves the static frontend directly from `frontend/`, the entire application can be deployed as a single production service!
 
 #### Deploying on Render:
@@ -343,7 +336,7 @@ Because the Express backend serves the static frontend directly from `frontend/`
 
 ---
 
-### Option B: Separate Frontend (Netlify / Vercel) + Backend (Render / Fly.io)
+### Optional separate frontend hosting (not recommended for the initial deployment)
 1. Deploy the backend to Render/Fly.io.
 2. In `frontend/js/api.js`, update `const API_BASE = 'https://your-backend.onrender.com';`.
 3. In `frontend/js/notifications.js`, update `new EventSource('https://your-backend.onrender.com/api/realtime/stream');`.

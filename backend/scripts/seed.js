@@ -6,6 +6,11 @@ const config = require('../config/env');
 async function runSeed() {
   console.log('🌱 Starting database seed script...');
 
+  if (config.NODE_ENV === 'production') {
+    console.error('Refusing to run demo seed in production; seed.sql truncates application tables.');
+    process.exit(1);
+  }
+
   if (!config.DATABASE_URL) {
     console.log('ℹ️ No DATABASE_URL provided. Embedded memory store is already seeded by default.');
     process.exit(0);

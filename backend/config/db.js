@@ -546,6 +546,7 @@ const memoryStore = {
 // Initialize PostgreSQL Connection Pool if DATABASE_URL is configured
 async function initDatabase() {
   if (config.DATABASE_URL && config.DATABASE_URL.trim() !== '') {
+    let client;
     try {
       pool = new Pool({
         connectionString: config.DATABASE_URL,
@@ -553,26 +554,36 @@ async function initDatabase() {
       });
 
       // Test connection
-      const client = await pool.connect();
+      client = await pool.connect();
       console.log('✅ [DATABASE] PostgreSQL connected successfully via DATABASE_URL');
       isPostgresLive = true;
 
-      // Check if tables exist, run schema.sql if empty
+      // Initialize an empty database without loading demo records in production.
       const checkTable = await client.query("SELECT to_regclass('public.users') as exists;");
       if (!checkTable.rows[0].exists) {
-        console.log('⚡ [DATABASE] Initializing schema and seed data in PostgreSQL...');
+        console.log('⚡ [DATABASE] Initializing PostgreSQL schema...');
         const schemaSql = fs.readFileSync(path.resolve(__dirname, '../../database/schema.sql'), 'utf8');
-        const seedSql = fs.readFileSync(path.resolve(__dirname, '../../database/seed.sql'), 'utf8');
         await client.query(schemaSql);
-        await client.query(seedSql);
-        console.log('✅ [DATABASE] PostgreSQL schema & seed data initialized.');
+        if (config.NODE_ENV !== 'production' && config.SEED_DEMO_DATA) {
+          const seedSql = fs.readFileSync(path.resolve(__dirname, '../../database/seed.sql'), 'utf8');
+          await client.query(seedSql);
+        }
+        console.log('✅ [DATABASE] PostgreSQL schema initialized.');
       }
-      client.release();
     } catch (err) {
-      console.warn('⚠️ [DATABASE] PostgreSQL connection failed (' + err.message + '). Switching seamlessly to embedded ACID store.');
       isPostgresLive = false;
+      if (client) client.release();
+      if (pool) await pool.end().catch(() => {});
+      pool = null;
+      if (config.NODE_ENV === 'production') throw err;
+      console.warn('⚠️ [DATABASE] PostgreSQL connection failed (' + err.message + '). Switching seamlessly to embedded ACID store.');
+      return;
     }
+    if (client) client.release();
   } else {
+    if (config.NODE_ENV === 'production') {
+      throw new Error('DATABASE_URL is required in production');
+    }
     console.log('ℹ️ [DATABASE] Operating with high-performance embedded store. Connect PostgreSQL by configuring DATABASE_URL.');
     isPostgresLive = false;
   }

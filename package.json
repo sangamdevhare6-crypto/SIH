@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
-    "seed": "node backend/scripts/seed.js"
+    "seed": "node backend/scripts/seed.js",
+    "test": "node backend/scripts/verify-all.js",
+    "provision:authority": "node backend/scripts/provision-authority.js"
   },
   "keywords": [
     "disaster-management",

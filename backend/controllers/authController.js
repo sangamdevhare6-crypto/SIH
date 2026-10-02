@@ -1,4 +1,5 @@
 const { memoryStore, isPostgresLive, getPool } = require('../config/db');
+const config = require('../config/env');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { generateToken } = require('../utils/jwt');
 
@@ -101,6 +102,13 @@ async function registerCitizen(req, res, next) {
 // 2. Register Authority
 async function registerAuthority(req, res, next) {
   try {
+    if (config.NODE_ENV === 'production') {
+      return res.status(403).json({
+        success: false,
+        error: 'Authority accounts must be provisioned by an administrator'
+      });
+    }
+
     const { full_name, email, phone, department, designation, official_id, password, confirm_password } = req.body;
 
     if (!full_name || !email || !department || !designation || !password) {
