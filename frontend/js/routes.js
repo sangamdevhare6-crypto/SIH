@@ -28,9 +28,9 @@ const SafeRoutesApp = {
       zoomControl: true
     }).setView([19.8762, 75.3433], 12);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_41g9_1_09a03975872c02f8446da851',{
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{
     maxZoom: 18,
-    attribution: '© OpenStreetMap contributors, © CARTO'
+    attribution: 'Tiles © Esri, HERE, Garmin, © OpenStreetMap contributors, GIS User Community'
     }).addTo(this.map);
 
     this.routeLayer = L.layerGroup().addTo(this.map);
