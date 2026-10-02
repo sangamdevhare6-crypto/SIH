@@ -94,12 +94,34 @@ async function runTests() {
     const weather = await request('GET', '/api/weather?city=Chhatrapati%20Sambhajinagar');
     assert(weather.status === 200 && weather.body.data.temperature > 0, 'Live Weather Service & Forecast');
 
+    const citySearch = await request('GET', '/api/weather/locations?q=Mumbai');
+    const mumbaiLocation = citySearch.body.data?.find(location => location.country === 'IN');
+    assert(citySearch.status === 200 && Boolean(mumbaiLocation), 'Worldwide city search returns Indian locations');
+
+    if (mumbaiLocation) {
+      const selectedCityWeather = await request(
+        'GET',
+        `/api/weather?city=${encodeURIComponent(mumbaiLocation.name)}&lat=${mumbaiLocation.latitude}&lon=${mumbaiLocation.longitude}&country=${mumbaiLocation.country}`
+      );
+      assert(
+        selectedCityWeather.status === 200 &&
+        selectedCityWeather.body.data.latitude === mumbaiLocation.latitude &&
+        selectedCityWeather.body.data.longitude === mumbaiLocation.longitude,
+        'Selected city weather uses its exact coordinates'
+      );
+    } else {
+      assert(false, 'Selected city weather uses its exact coordinates');
+    }
+
     const nowcast = await request('GET', '/api/weather/nowcast?city=Chhatrapati%20Sambhajinagar');
     assert(nowcast.status === 200 && nowcast.body.chartData.precipitationRate.length > 0, 'Nowcast Short-Term Prediction Curve & Risk Assessment');
 
     // 6. Radar & Satellite Metadata
     const radar = await request('GET', '/api/weather/radar');
-    assert(radar.status === 200 && radar.body.data.type === 'LIVE_PRECIPITATION_RADAR', 'Radar metadata endpoint');
+    assert(radar.status === 200 && radar.body.data.type === 'LIVE_PRECIPITATION_RADAR' && radar.body.data.provider === 'RainViewer', 'Radar metadata endpoint');
+
+    const radarTile = await request('GET', '/api/weather/radar/tile/7/90/56');
+    assert(radarTile.status === 200 && radarTile.headers['content-type'].includes('image/png'), 'RainViewer radar tile for Chhatrapati Sambhajinagar');
 
     // 7. Alerts List
     const alerts = await request('GET', '/api/alerts');

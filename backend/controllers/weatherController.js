@@ -1,5 +1,23 @@
-const { getLiveWeather } = require('../services/weatherService');
+const { getLiveWeather, searchCities } = require('../services/weatherService');
 const { getRadarMetadata } = require('../services/radarService');
+
+async function searchWeatherLocations(req, res, next) {
+  const query = String(req.query.q || '').trim();
+
+  if (query.length < 2) {
+    return res.status(400).json({
+      success: false,
+      error: 'Enter at least two characters to search for a city'
+    });
+  }
+
+  try {
+    const locations = await searchCities(query);
+    return res.json({ success: true, data: locations });
+  } catch (error) {
+    next(error);
+  }
+}
 
 
 /**
@@ -25,8 +43,25 @@ async function getWeather(req, res, next) {
       });
     }
 
+    const hasLatitude = req.query.lat !== undefined;
+    const hasLongitude = req.query.lon !== undefined;
+
+    if (hasLatitude !== hasLongitude) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both latitude and longitude are required'
+      });
+    }
+
+    const coordinates = hasLatitude ? {
+      latitude: Number(req.query.lat),
+      longitude: Number(req.query.lon),
+      state: String(req.query.state || ''),
+      country: String(req.query.country || '')
+    } : null;
+
     const weather =
-      await getLiveWeather(city);
+      await getLiveWeather(city, coordinates);
 
     return res.json({
       success: true,
@@ -330,6 +365,7 @@ function getRadar(req, res, next) {
 
 
 module.exports = {
+  searchWeatherLocations,
   getWeather,
   getNowcast,
   getRadar

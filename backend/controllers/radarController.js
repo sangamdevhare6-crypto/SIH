@@ -33,7 +33,7 @@ function getRadar(req, res, next) {
  * /api/weather/radar/tile/6/34/23
  *
  * Backend:
- * Tomorrow.io
+ * RainViewer
  */
 async function getRadarTileImage(req, res, next) {
 
@@ -45,12 +45,7 @@ async function getRadarTileImage(req, res, next) {
             y
         } = req.params;
 
-        const tile = await getRadarTile(
-            z,
-            x,
-            y,
-            'now'
-        );
+        const tile = await getRadarTile(z, x, y);
 
         res.setHeader(
             'Content-Type',

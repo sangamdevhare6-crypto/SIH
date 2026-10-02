@@ -6,7 +6,44 @@ const env = require('../config/env');
  * Get LIVE current weather + 5-day forecast for ANY valid city
  * using OpenWeather Geocoding + Current Weather + 5-Day Forecast APIs.
  */
-async function getLiveWeather(city = 'Chhatrapati Sambhajinagar') {
+async function searchCities(query) {
+  const normalizedQuery = String(query || '').trim();
+
+  if (normalizedQuery.length < 2) {
+    return [];
+  }
+
+  if (!env.WEATHER_API_KEY || env.WEATHER_API_KEY === 'demo_weather_key') {
+    throw new Error('WEATHER_API_KEY is not configured');
+  }
+
+  const geoUrl =
+    `https://api.openweathermap.org/geo/1.0/direct` +
+    `?q=${encodeURIComponent(normalizedQuery)}` +
+    `&limit=8` +
+    `&appid=${encodeURIComponent(env.WEATHER_API_KEY)}`;
+
+  const locations = await fetchJson(geoUrl);
+
+  if (!Array.isArray(locations)) {
+    throw new Error('Location search returned an invalid response');
+  }
+
+  return locations.map((location) => ({
+    name: location.name,
+    state: location.state || '',
+    country: location.country || '',
+    latitude: Number(location.lat),
+    longitude: Number(location.lon)
+  })).filter((location) =>
+    location.name &&
+    location.country &&
+    Number.isFinite(location.latitude) &&
+    Number.isFinite(location.longitude)
+  );
+}
+
+async function getLiveWeather(city = 'Chhatrapati Sambhajinagar', coordinates = null) {
   const normCity = String(city).trim();
 
   if (!normCity) {
@@ -25,24 +62,47 @@ async function getLiveWeather(city = 'Chhatrapati Sambhajinagar') {
     // STEP 1: CITY NAME -> LATITUDE / LONGITUDE
     // =========================================================
 
-    const geoUrl =
-      `https://api.openweathermap.org/geo/1.0/direct` +
-      `?q=${encodeURIComponent(normCity)}` +
-      `&limit=1` +
-      `&appid=${encodeURIComponent(env.WEATHER_API_KEY)}`;
+    let location;
 
-    console.log(`[WEATHER] Searching city: ${normCity}`);
+    if (coordinates) {
+      const latitude = Number(coordinates.latitude);
+      const longitude = Number(coordinates.longitude);
 
-    const geoData = await fetchJson(geoUrl);
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180
+      ) {
+        throw new Error('Invalid city coordinates');
+      }
 
-    if (
-      !Array.isArray(geoData) ||
-      geoData.length === 0
-    ) {
-      throw new Error(`Location "${normCity}" not found`);
+      location = {
+        name: normCity,
+        state: coordinates.state || '',
+        country: coordinates.country || '',
+        lat: latitude,
+        lon: longitude
+      };
+    } else {
+      const geoUrl =
+        `https://api.openweathermap.org/geo/1.0/direct` +
+        `?q=${encodeURIComponent(normCity)}` +
+        `&limit=1` +
+        `&appid=${encodeURIComponent(env.WEATHER_API_KEY)}`;
+
+      console.log(`[WEATHER] Searching city: ${normCity}`);
+
+      const geoData = await fetchJson(geoUrl);
+
+      if (!Array.isArray(geoData) || geoData.length === 0) {
+        throw new Error(`Location "${normCity}" not found`);
+      }
+
+      location = geoData[0];
     }
-
-    const location = geoData[0];
 
     const lat = Number(location.lat);
     const lon = Number(location.lon);
@@ -648,5 +708,6 @@ function fetchJson(url) {
 
 
 module.exports = {
-  getLiveWeather
+  getLiveWeather,
+  searchCities
 };

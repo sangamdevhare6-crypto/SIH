@@ -2,8 +2,8 @@
    WORLD MONITOR - LIVE RADAR & SATELLITE CONTROLLER
    ============================================================
    Features:
-   - Live Tomorrow.io precipitation radar
-   - Dark OpenStreetMap basemap
+    - Live RainViewer precipitation radar
+    - Esri dark-gray basemap
    - Satellite basemap
    - Storm cell visualization
    - Lightning visualization
@@ -62,6 +62,14 @@ const RadarApp = {
 
     mapResizeObserver: null,
 
+    citySearchTimer: null,
+
+    citySearchRequestId: 0,
+
+    citySelectionRequestId: 0,
+
+    citySearchResults: [],
+
 
     /* ==========================================================
        INIT
@@ -94,6 +102,13 @@ const RadarApp = {
 
         // Bind buttons and controls
         this.bindControls();
+        this.bindCitySearch();
+
+        const initialCity =
+            localStorage.getItem('wm_selected_city') ||
+            'Chhatrapati Sambhajinagar';
+
+        this.loadCityByName(initialCity);
 
         // Start timeline animation
         this.startAnimationLoop();
@@ -115,6 +130,350 @@ const RadarApp = {
         console.log(
             'WORLD MONITOR RADAR: Initialization complete.'
         );
+    },
+
+
+    bindCitySearch() {
+        const input = document.getElementById('radar-city-search');
+        const searchButton = document.getElementById('radar-city-search-button');
+        const results = document.getElementById('radar-city-search-results');
+        const citySelect = document.getElementById('global-city-select');
+
+        if (!input || !searchButton || !results) return;
+
+        input.addEventListener('input', () => {
+            window.clearTimeout(this.citySearchTimer);
+            const query = input.value.trim();
+
+            if (query.length < 2) {
+                this.citySearchRequestId += 1;
+                this.hideCitySearchResults();
+                return;
+            }
+
+            this.citySearchTimer = window.setTimeout(
+                () => this.searchCities(query),
+                350
+            );
+        });
+
+        searchButton.addEventListener('click', () => {
+            window.clearTimeout(this.citySearchTimer);
+            this.searchCities(input.value.trim());
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                this.hideCitySearchResults();
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const firstResult = results.querySelector('[data-location-index]');
+
+                if (firstResult && !results.hidden) {
+                    firstResult.click();
+                } else {
+                    this.searchCities(input.value.trim());
+                }
+            }
+        });
+
+        results.addEventListener('click', (event) => {
+            const resultButton = event.target.closest('[data-location-index]');
+            if (!resultButton) return;
+
+            const location = this.citySearchResults[
+                Number(resultButton.dataset.locationIndex)
+            ];
+
+            if (location) this.selectRadarCity(location);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('.radar-city-picker')) {
+                this.hideCitySearchResults();
+            }
+        });
+
+        if (citySelect) {
+            citySelect.addEventListener('change', (event) => {
+                this.loadCityByName(event.target.value);
+            });
+        }
+    },
+
+
+    async searchCities(query) {
+        const input = document.getElementById('radar-city-search');
+
+        if (query.length < 2) {
+            this.renderCitySearchMessage('Enter at least 2 characters');
+            return;
+        }
+
+        const requestId = ++this.citySearchRequestId;
+        this.renderCitySearchMessage('Searching locations...');
+
+        try {
+            const response = await API.get(
+                `/api/weather/locations?q=${encodeURIComponent(query)}`
+            );
+
+            if (requestId !== this.citySearchRequestId) return;
+
+            this.citySearchResults = response.data || [];
+
+            if (this.citySearchResults.length === 0) {
+                this.renderCitySearchMessage('No matching cities found');
+                return;
+            }
+
+            this.renderCitySearchResults(this.citySearchResults);
+            input?.setAttribute('aria-expanded', 'true');
+        } catch (error) {
+            if (requestId !== this.citySearchRequestId) return;
+            this.renderCitySearchMessage('City search unavailable. Check weather API setup.');
+        }
+    },
+
+
+    renderCitySearchResults(locations) {
+        const results = document.getElementById('radar-city-search-results');
+        if (!results) return;
+
+        results.replaceChildren();
+        locations.forEach((location, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'radar-city-result';
+            button.setAttribute('role', 'option');
+            button.dataset.locationIndex = String(index);
+
+            const name = document.createElement('span');
+            name.className = 'radar-city-result-name';
+            name.textContent = location.name;
+
+            const details = document.createElement('span');
+            details.className = 'radar-city-result-meta';
+            details.textContent = [
+                location.state,
+                this.getCountryName(location.country)
+            ].filter(Boolean).join(', ');
+
+            button.append(name, details);
+            results.append(button);
+        });
+
+        results.hidden = false;
+        document.getElementById('radar-city-search')?.setAttribute('aria-expanded', 'true');
+    },
+
+
+    renderCitySearchMessage(message) {
+        const results = document.getElementById('radar-city-search-results');
+        if (!results) return;
+
+        results.replaceChildren();
+        const messageElement = document.createElement('div');
+        messageElement.className = 'radar-city-search-message';
+        messageElement.textContent = message;
+        results.append(messageElement);
+        results.hidden = false;
+        document.getElementById('radar-city-search')?.setAttribute('aria-expanded', 'true');
+    },
+
+
+    hideCitySearchResults() {
+        const results = document.getElementById('radar-city-search-results');
+        if (results) results.hidden = true;
+        document.getElementById('radar-city-search')?.setAttribute('aria-expanded', 'false');
+    },
+
+
+    getCountryName(countryCode) {
+        if (!countryCode) return '';
+
+        try {
+            return new Intl.DisplayNames([navigator.language || 'en'], {
+                type: 'region'
+            }).of(countryCode) || countryCode;
+        } catch (error) {
+            return countryCode;
+        }
+    },
+
+
+    formatCityLabel(location) {
+        return [
+            location.name,
+            location.state,
+            this.getCountryName(location.country)
+        ].filter(Boolean).join(', ');
+    },
+
+
+    async selectRadarCity(location) {
+        const requestId = ++this.citySelectionRequestId;
+        const selectedLocation = {
+            ...location,
+            latitude: Number(location.latitude),
+            longitude: Number(location.longitude)
+        };
+
+        this.applyRadarLocation(selectedLocation);
+        this.hideCitySearchResults();
+        this.syncSharedCity(selectedLocation);
+
+        const query = new URLSearchParams({
+            city: selectedLocation.name,
+            lat: String(selectedLocation.latitude),
+            lon: String(selectedLocation.longitude),
+            state: selectedLocation.state || '',
+            country: selectedLocation.country || ''
+        });
+
+        try {
+            const response = await API.get(`/api/weather?${query}`);
+            if (requestId !== this.citySelectionRequestId) return;
+            this.renderCityWeather(response.data, selectedLocation);
+        } catch (error) {
+            if (requestId !== this.citySelectionRequestId) return;
+            this.renderCityWeather(null, selectedLocation);
+        }
+    },
+
+
+    async loadCityByName(city) {
+        if (!city || !this.map) return;
+
+        const requestId = ++this.citySelectionRequestId;
+        this.setCityWeatherLoading(city);
+
+        try {
+            const response = await API.get(
+                `/api/weather?city=${encodeURIComponent(city)}`
+            );
+
+            if (requestId !== this.citySelectionRequestId) return;
+
+            const weather = response.data;
+            const location = {
+                name: weather.city,
+                state: weather.state,
+                country: weather.country,
+                latitude: weather.latitude,
+                longitude: weather.longitude
+            };
+
+            this.applyRadarLocation(location);
+            this.renderCityWeather(weather, location);
+        } catch (error) {
+            if (requestId !== this.citySelectionRequestId) return;
+            this.renderCityWeather(null, { name: city });
+        }
+    },
+
+
+    applyRadarLocation(location) {
+        this.selectedLocation = location;
+
+        if (
+            this.map &&
+            Number.isFinite(location.latitude) &&
+            Number.isFinite(location.longitude)
+        ) {
+            this.map.setView(
+                [location.latitude, location.longitude],
+                7,
+                { animate: true }
+            );
+        }
+
+        const cityName = this.formatCityLabel(location);
+        const selectedCity = document.getElementById('radar-selected-city');
+        const searchInput = document.getElementById('radar-city-search');
+
+        if (selectedCity) selectedCity.textContent = cityName;
+        if (searchInput) searchInput.value = cityName;
+
+        this.setCityWeatherLoading(cityName);
+    },
+
+
+    setCityWeatherLoading(cityName) {
+        const selectedCity = document.getElementById('radar-selected-city');
+        const condition = document.getElementById('radar-city-condition');
+
+        if (selectedCity) selectedCity.textContent = cityName;
+        if (condition) condition.textContent = 'Loading current conditions';
+
+        ['radar-city-temperature', 'radar-city-rainfall', 'radar-city-humidity']
+            .forEach((id) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = '--';
+            });
+    },
+
+
+    renderCityWeather(weather, location) {
+        const cityName = this.formatCityLabel({
+            name: weather?.city || location.name,
+            state: weather?.state || location.state,
+            country: weather?.country || location.country
+        });
+
+        const selectedCity = document.getElementById('radar-selected-city');
+        const condition = document.getElementById('radar-city-condition');
+        if (selectedCity) selectedCity.textContent = cityName;
+
+        if (!weather) {
+            if (condition) condition.textContent = 'Current weather unavailable';
+            return;
+        }
+
+        if (condition) {
+            condition.textContent = weather.condition || 'Current conditions available';
+        }
+
+        const metrics = {
+            'radar-city-temperature': `${Math.round(Number(weather.temperature))}°C`,
+            'radar-city-rainfall': `${Number(weather.rainfall_mm || 0).toFixed(1)} mm`,
+            'radar-city-humidity': `${Math.round(Number(weather.humidity))}%`
+        };
+
+        Object.entries(metrics).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        });
+    },
+
+
+    syncSharedCity(location) {
+        const cityQuery = [location.name, location.country]
+            .filter(Boolean)
+            .join(', ');
+        const citySelect = document.getElementById('global-city-select');
+
+        if (citySelect) {
+            let option = Array.from(citySelect.options).find(
+                (item) => item.value === cityQuery
+            );
+
+            if (!option) {
+                option = new Option(this.formatCityLabel(location), cityQuery);
+                citySelect.add(option);
+            }
+
+            citySelect.value = cityQuery;
+        }
+
+        if (window.App && typeof window.App.changeCity === 'function') {
+            window.App.changeCity(cityQuery);
+        } else {
+            localStorage.setItem('wm_selected_city', cityQuery);
+        }
     },
 
 
@@ -507,7 +866,7 @@ const RadarApp = {
 
 
     /* ==========================================================
-       LIVE TOMORROW.IO RADAR
+    LIVE RAINVIEWER RADAR
        ========================================================== */
 
     addLiveRadarLayer() {
@@ -556,7 +915,7 @@ const RadarApp = {
                 ↓
            Node / Express backend
                 ↓
-           Tomorrow.io
+           RainViewer
         ====================================================== */
 
         this.liveRadarLayer =
@@ -569,6 +928,8 @@ const RadarApp = {
                     minZoom: 2,
 
                     maxZoom: 12,
+
+                    maxNativeZoom: 7,
 
                     tileSize: 256,
 
@@ -583,7 +944,7 @@ const RadarApp = {
                     crossOrigin: true,
 
                     attribution:
-                        'Weather data &copy; Tomorrow.io'
+                        'Radar data &copy; RainViewer'
                 }
             );
 
@@ -613,7 +974,7 @@ const RadarApp = {
             (event) => {
 
                 console.error(
-                    'Tomorrow.io radar tile failed:',
+                    'RainViewer radar tile failed:',
                     event?.tile?.src || event
                 );
 
@@ -635,7 +996,7 @@ const RadarApp = {
 
 
         console.log(
-            'LIVE RADAR: Tomorrow.io precipitation layer enabled.'
+            'LIVE RADAR: RainViewer precipitation layer enabled.'
         );
     },
 
@@ -663,7 +1024,7 @@ const RadarApp = {
                 if (isOnline) {
 
                     element.textContent =
-                        'LIVE Radar monitoring active';
+                        'Radar feed available';
 
                     element.classList.remove(
                         'offline',

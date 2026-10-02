@@ -30,8 +30,6 @@ module.exports = {
   JWT_SECRET: process.env.JWT_SECRET || 'local-development-only-change-me',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   WEATHER_API_KEY: process.env.WEATHER_API_KEY || 'demo_weather_key',
-  MAP_API_KEY: process.env.MAP_API_KEY || 'demo_map_key',
-  RADAR_API_KEY: process.env.RADAR_API_KEY || 'demo_radar_key',
   CORS_ORIGIN: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
   SEED_DEMO_DATA: process.env.SEED_DEMO_DATA === 'true'
 };

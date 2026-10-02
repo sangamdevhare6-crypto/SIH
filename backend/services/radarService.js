@@ -1,158 +1,97 @@
-const https = require('https');
-const env = require('../config/env');
+const RAINVIEWER_API_URL = 'https://api.rainviewer.com/public/weather-maps.json';
+const RADAR_METADATA_CACHE_MS = 2 * 60 * 1000;
+const MAX_RADAR_ZOOM = 7;
 
-/**
- * Tomorrow.io Live Radar Tile
- *
- * Field:
- * precipitationIntensity
- *
- * The API key stays on the backend.
- */
-function getRadarTile(z, x, y, time = 'now') {
-    return new Promise((resolve, reject) => {
+let cachedRadarFrame = null;
+let radarFrameCacheExpiresAt = 0;
+let radarFrameRequest = null;
 
-        if (
-            !env.RADAR_API_KEY ||
-            env.RADAR_API_KEY === 'demo_radar_key'
-        ) {
-            return reject(
-                new Error('RADAR_API_KEY is not configured')
-            );
-        }
+async function getLatestRadarFrame() {
+  if (cachedRadarFrame && Date.now() < radarFrameCacheExpiresAt) {
+    return cachedRadarFrame;
+  }
 
-        // Tomorrow.io supports zoom 1-12
-        const zoom = Math.max(
-            1,
-            Math.min(12, Number(z))
-        );
+  if (!radarFrameRequest) {
+    radarFrameRequest = (async () => {
+      const response = await fetch(RAINVIEWER_API_URL, {
+        signal: AbortSignal.timeout(10000)
+      });
 
-        const tileX = Number(x);
-        const tileY = Number(y);
+      if (!response.ok) {
+        throw new Error(`RainViewer metadata request failed (${response.status})`);
+      }
 
-        if (
-            !Number.isInteger(tileX) ||
-            !Number.isInteger(tileY)
-        ) {
-            return reject(
-                new Error('Invalid radar tile coordinates')
-            );
-        }
+      const metadata = await response.json();
+      const frames = metadata?.radar?.past;
+      const latestFrame = Array.isArray(frames) ? frames[frames.length - 1] : null;
 
-        const radarTime =
-            time === 'now'
-                ? 'now'
-                : encodeURIComponent(time);
+      if (!metadata?.host || !latestFrame?.path) {
+        throw new Error('RainViewer returned no radar frames');
+      }
 
-        const url =
-            `https://api.tomorrow.io/v4/map/tile/` +
-            `${zoom}/${tileX}/${tileY}/` +
-            `precipitationIntensity/` +
-            `${radarTime}.png` +
-            `?apikey=${encodeURIComponent(env.RADAR_API_KEY)}`;
+      cachedRadarFrame = {
+        host: metadata.host,
+        path: latestFrame.path
+      };
+      radarFrameCacheExpiresAt = Date.now() + RADAR_METADATA_CACHE_MS;
 
-        console.log(
-            `Radar tile request: z=${zoom}, x=${tileX}, y=${tileY}`
-        );
+      return cachedRadarFrame;
+    })();
+  }
 
-        const request = https.get(
-            url,
-            {
-                timeout: 15000,
-                headers: {
-                    'Accept': 'image/png'
-                }
-            },
-            (response) => {
-
-                if (
-                    response.statusCode < 200 ||
-                    response.statusCode >= 300
-                ) {
-                    let errorData = '';
-
-                    response.on(
-                        'data',
-                        chunk => {
-                            errorData += chunk.toString();
-                        }
-                    );
-
-                    response.on(
-                        'end',
-                        () => {
-                            reject(
-                                new Error(
-                                    `Tomorrow.io radar error ` +
-                                    `${response.statusCode}: ` +
-                                    `${errorData.substring(0, 300)}`
-                                )
-                            );
-                        }
-                    );
-
-                    return;
-                }
-
-                const chunks = [];
-
-                response.on(
-                    'data',
-                    chunk => {
-                        chunks.push(chunk);
-                    }
-                );
-
-                response.on(
-                    'end',
-                    () => {
-                        resolve(
-                            Buffer.concat(chunks)
-                        );
-                    }
-                );
-            }
-        );
-
-        request.on(
-            'timeout',
-            () => {
-                request.destroy();
-
-                reject(
-                    new Error(
-                        'Tomorrow.io radar request timed out'
-                    )
-                );
-            }
-        );
-
-        request.on(
-            'error',
-            reject
-        );
-    });
+  try {
+    return await radarFrameRequest;
+  } finally {
+    radarFrameRequest = null;
+  }
 }
 
+async function getRadarTile(z, x, y) {
+  const zoom = Number(z);
+  const tileX = Number(x);
+  const tileY = Number(y);
 
-/**
- * Radar metadata
- */
+  if (
+    !Number.isInteger(zoom) ||
+    !Number.isInteger(tileX) ||
+    !Number.isInteger(tileY) ||
+    zoom < 0 ||
+    zoom > MAX_RADAR_ZOOM ||
+    tileX < 0 ||
+    tileY < 0 ||
+    tileX >= 2 ** zoom ||
+    tileY >= 2 ** zoom
+  ) {
+    throw new Error('Invalid radar tile coordinates');
+  }
+
+  const frame = await getLatestRadarFrame();
+  const tileUrl = `${frame.host}${frame.path}/256/${zoom}/${tileX}/${tileY}/2/1_1.png`;
+  const response = await fetch(tileUrl, {
+    signal: AbortSignal.timeout(15000)
+  });
+
+  if (!response.ok) {
+    const details = (await response.text()).slice(0, 200);
+    throw new Error(`RainViewer tile request failed (${response.status}): ${details}`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
 function getRadarMetadata() {
-
-    return {
-        provider: 'Tomorrow.io',
-        layer: 'precipitationIntensity',
-        type: 'LIVE_PRECIPITATION_RADAR',
-        tileFormat: 'png',
-        minZoom: 1,
-        maxZoom: 12,
-        updatedAt: new Date().toISOString()
-    };
+  return {
+    provider: 'RainViewer',
+    layer: 'radar reflectivity',
+    type: 'LIVE_PRECIPITATION_RADAR',
+    tileFormat: 'png',
+    minZoom: 0,
+    maxZoom: MAX_RADAR_ZOOM,
+    updateIntervalMinutes: 10
+  };
 }
-
 
 module.exports = {
-    getRadarTile,
-    getRadarMetadata
+  getRadarTile,
+  getRadarMetadata
 };

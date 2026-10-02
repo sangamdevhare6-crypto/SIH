@@ -504,11 +504,304 @@
         }
 
 
+        .radar-location-controls {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .radar-city-picker {
+
+            position: relative;
+
+            z-index: 1200;
+
+            width: 250px;
+
+        }
+
+
+        .radar-city-search {
+
+            display: flex;
+
+            height: 40px;
+
+            overflow: hidden;
+
+            border: 1px solid rgba(0, 217, 255, 0.35);
+
+            border-radius: 6px;
+
+            background: rgba(2, 14, 38, 0.94);
+
+        }
+
+
+        .radar-city-search input {
+
+            width: 100%;
+
+            min-width: 0;
+
+            padding: 0 10px;
+
+            border: 0;
+
+            outline: 0;
+
+            color: #fff;
+
+            background: transparent;
+
+            font: 600 0.95rem var(--font-rajdhani, sans-serif);
+
+        }
+
+
+        .radar-city-search input::placeholder {
+
+            color: #91a8bc;
+
+        }
+
+
+        .radar-city-search button {
+
+            display: grid;
+
+            width: 42px;
+
+            flex: 0 0 42px;
+
+            place-items: center;
+
+            border: 0;
+
+            border-left: 1px solid rgba(0, 217, 255, 0.25);
+
+            color: #00d9ff;
+
+            background: rgba(0, 217, 255, 0.08);
+
+            cursor: pointer;
+
+        }
+
+
+        .radar-city-search-results {
+
+            position: absolute;
+
+            top: calc(100% + 6px);
+
+            right: 0;
+
+            left: 0;
+
+            max-height: 280px;
+
+            overflow-y: auto;
+
+            border: 1px solid rgba(0, 217, 255, 0.35);
+
+            border-radius: 6px;
+
+            background: #061727;
+
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+
+        }
+
+
+        .radar-city-search-results[hidden] {
+
+            display: none;
+
+        }
+
+
+        .radar-city-result {
+
+            display: block;
+
+            width: 100%;
+
+            padding: 10px 12px;
+
+            border: 0;
+
+            border-bottom: 1px solid rgba(142, 163, 184, 0.14);
+
+            color: #fff;
+
+            background: transparent;
+
+            text-align: left;
+
+            cursor: pointer;
+
+        }
+
+
+        .radar-city-result:hover,
+        .radar-city-result:focus-visible {
+
+            outline: 0;
+
+            background: rgba(0, 217, 255, 0.12);
+
+        }
+
+
+        .radar-city-result-name {
+
+            display: block;
+
+            font: 700 0.98rem var(--font-rajdhani, sans-serif);
+
+        }
+
+
+        .radar-city-result-meta {
+
+            display: block;
+
+            margin-top: 2px;
+
+            color: #9aafc2;
+
+            font-size: 0.78rem;
+
+        }
+
+
+        .radar-city-search-message {
+
+            padding: 12px;
+
+            color: #c3d2df;
+
+            font-size: 0.85rem;
+
+        }
+
+
+        .radar-city-weather {
+
+            position: absolute;
+
+            top: 14px;
+
+            right: 14px;
+
+            z-index: 700;
+
+            width: 250px;
+
+            padding: 13px 15px;
+
+            border: 1px solid rgba(0, 217, 255, 0.4);
+
+            border-radius: 6px;
+
+            color: #fff;
+
+            background: rgba(3, 19, 34, 0.94);
+
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+
+            pointer-events: none;
+
+        }
+
+
+        .radar-city-weather-label {
+
+            color: #00d9ff;
+
+            font: 700 0.68rem var(--font-orbitron, sans-serif);
+
+        }
+
+
+        .radar-city-weather-name {
+
+            display: block;
+
+            margin-top: 5px;
+
+            font: 700 1rem var(--font-rajdhani, sans-serif);
+
+            overflow-wrap: anywhere;
+
+        }
+
+
+        .radar-city-weather-condition {
+
+            margin: 2px 0 10px;
+
+            color: #b8c9d8;
+
+            font-size: 0.8rem;
+
+            text-transform: capitalize;
+
+        }
+
+
+        .radar-city-weather-metrics {
+
+            display: grid;
+
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+
+            gap: 8px;
+
+        }
+
+
+        .radar-city-weather-metrics span {
+
+            display: block;
+
+            color: #91a8bc;
+
+            font-size: 0.68rem;
+
+        }
+
+
+        .radar-city-weather-metrics strong {
+
+            display: block;
+
+            margin-top: 2px;
+
+            font: 700 0.95rem var(--font-rajdhani, sans-serif);
+
+        }
+
+
         /* =====================================================
            RESPONSIVE
            ===================================================== */
 
         @media (max-width: 900px) {
+
+            .radar-city-picker {
+
+                width: 220px;
+
+            }
 
             .radar-map-wrapper {
 
@@ -538,6 +831,108 @@
 
 
         @media (max-width: 600px) {
+
+            .topbar {
+
+                height: auto;
+
+                min-height: var(--topbar-height);
+
+                flex-wrap: wrap;
+
+                gap: 8px;
+
+                padding: 8px 12px;
+
+            }
+
+            .topbar-left {
+
+                width: 100%;
+
+                min-width: 0;
+
+                flex-wrap: wrap;
+
+                gap: 8px;
+
+            }
+
+            .topbar-left .mobile-menu-btn {
+
+                flex: 0 0 38px;
+
+            }
+
+            .radar-location-controls {
+
+                width: calc(100% - 46px);
+
+                min-width: 0;
+
+                flex: 1 1 0;
+
+            }
+
+            .location-selector-wrap {
+
+                display: none;
+
+            }
+
+            .radar-city-picker {
+
+                width: 100%;
+
+                min-width: 0;
+
+            }
+
+            #system-clock {
+
+                display: none;
+
+            }
+
+            .topbar-right {
+
+                width: 100%;
+
+                min-width: 0;
+
+                justify-content: flex-end;
+
+            }
+
+            .topbar-right > a {
+
+                display: none;
+
+            }
+
+            .radar-location-controls {
+
+                gap: 6px;
+
+            }
+
+            .radar-city-picker {
+
+                width: min(100%, 220px);
+
+            }
+
+            .radar-city-weather {
+
+                top: 12px;
+
+                right: 12px;
+
+                width: 210px;
+
+                padding: 10px 12px;
+
+            }
 
             .radar-map-wrapper {
 
@@ -889,6 +1284,8 @@
 
                 <!-- CITY SELECTOR -->
 
+                <div class="radar-location-controls">
+
                 <div class="location-selector-wrap">
 
                     <i data-lucide="map-pin"></i>
@@ -962,6 +1359,41 @@
                         </option>
 
                     </select>
+
+                </div>
+
+                <div class="radar-city-picker">
+
+                    <div class="radar-city-search">
+
+                        <input
+                            id="radar-city-search"
+                            type="search"
+                            placeholder="Search any city or country"
+                            aria-label="Search cities worldwide"
+                            aria-autocomplete="list"
+                            aria-controls="radar-city-search-results"
+                            aria-expanded="false"
+                            autocomplete="off">
+
+                        <button
+                            id="radar-city-search-button"
+                            type="button"
+                            title="Search city"
+                            aria-label="Search city">
+                            <i data-lucide="search"></i>
+                        </button>
+
+                    </div>
+
+                    <div
+                        id="radar-city-search-results"
+                        class="radar-city-search-results"
+                        role="listbox"
+                        hidden>
+                    </div>
+
+                </div>
 
                 </div>
 
@@ -1395,6 +1827,43 @@
                         id="radar-map">
                     </div>
 
+                    <aside
+                        class="radar-city-weather"
+                        aria-live="polite">
+
+                        <span class="radar-city-weather-label">
+                            SELECTED CITY WEATHER
+                        </span>
+
+                        <strong
+                            class="radar-city-weather-name"
+                            id="radar-selected-city">
+                            Chhatrapati Sambhajinagar
+                        </strong>
+
+                        <p
+                            class="radar-city-weather-condition"
+                            id="radar-city-condition">
+                            Loading current conditions
+                        </p>
+
+                        <div class="radar-city-weather-metrics">
+                            <div>
+                                <span>Temperature</span>
+                                <strong id="radar-city-temperature">--</strong>
+                            </div>
+                            <div>
+                                <span>Rain (1h)</span>
+                                <strong id="radar-city-rainfall">--</strong>
+                            </div>
+                            <div>
+                                <span>Humidity</span>
+                                <strong id="radar-city-humidity">--</strong>
+                            </div>
+                        </div>
+
+                    </aside>
+
 
                     <!-- =================================================
                          RADAR LEGEND
@@ -1568,7 +2037,7 @@
                             color:var(--cyan-bright);
                         ">
 
-                        Tomorrow.io
+                        RainViewer
 
                     </b>
 

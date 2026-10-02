@@ -18,10 +18,10 @@ Frontend aur backend ek hi Render Web Service par deploy honge. Alag frontend se
 5. **Create Database** dabao aur status **Available** hone tak wait karo.
 6. Database page se **Internal Database URL** copy karo. Ye `DATABASE_URL` hoga.
 
-## 3. API Keys Aur JWT Secret Taiyar Karo
+## 3. Weather API Key Aur JWT Secret Taiyar Karo
 
 1. [OpenWeather](https://openweathermap.org/api) par account banao aur API key lo. Ye `WEATHER_API_KEY` hai; current weather aur forecast API access enabled hona chahiye.
-2. [Tomorrow.io](https://www.tomorrow.io/weather-api/) par account banao aur API key lo. Ye `RADAR_API_KEY` hai.
+2. Radar RainViewer se aata hai; iske liye `RADAR_API_KEY` ki zaroorat nahi hai.
 3. PowerShell mein ye command chalao aur output copy karo:
 
    ```powershell
@@ -56,7 +56,6 @@ Frontend aur backend ek hi Render Web Service par deploy honge. Alag frontend se
    | `CORS_ORIGIN` | `https://world-monitor.onrender.com` |
    | `SEED_DEMO_DATA` | `false` |
    | `WEATHER_API_KEY` | Step 3 ki OpenWeather key |
-   | `RADAR_API_KEY` | Step 3 ki Tomorrow.io key |
 
 5. **Create Web Service** dabao. Render jo site URL de, use copy karo. Agar URL `https://world-monitor.onrender.com` se alag hai, service ke **Environment** page par `CORS_ORIGIN` ko exact URL se update karke **Save Changes** dabao.
 
