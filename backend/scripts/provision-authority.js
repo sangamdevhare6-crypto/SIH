@@ -1,7 +1,16 @@
 const readline = require('readline');
+const path = require('path');
 const { Pool } = require('pg');
+const dotenv = require('dotenv');
 const { hashPassword } = require('../utils/hash');
-const config = require('../config/env');
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+const config = {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  DATABASE_URL: process.env.DATABASE_URL || '',
+  ADMIN_EMAIL: String(process.env.ADMIN_EMAIL || '').trim().toLowerCase()
+};
 
 function prompt(label, secret = false) {
   if (!process.stdin.isTTY) {
@@ -51,6 +60,10 @@ function prompt(label, secret = false) {
 }
 
 async function provisionAuthority() {
+  if (config.NODE_ENV === 'production' && !config.ADMIN_EMAIL) {
+    throw new Error('ADMIN_EMAIL is required in production');
+  }
+
   if (!config.DATABASE_URL) {
     throw new Error('DATABASE_URL is required');
   }

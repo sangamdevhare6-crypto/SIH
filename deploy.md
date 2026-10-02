@@ -77,16 +77,35 @@ Frontend aur backend ek hi Render Web Service par deploy honge. Alag frontend se
 
 ## 6. Authority Account Banao
 
-1. Render service page mein **Shell** kholo.
-2. Ye command chalao:
+Render Shell available ho to service page ke **Shell** tab mein ye command chalao:
 
-   ```bash
+```bash
+npm run provision:authority
+```
+
+Render Shell nahi hai to local PowerShell se provision karo:
+
+1. Render PostgreSQL page > **Connect** se **External Database URL** copy karo. Local computer par **Internal Database URL** kaam nahi karega.
+2. Project ke local `.env` file mein ye values temporarily set karo. Existing `.env` ko Git mein commit mat karo:
+
+   ```env
+   NODE_ENV=production
+   ADMIN_EMAIL=your-admin-email@example.com
+   DATABASE_URL=paste-the-render-external-database-url-here
+   ```
+
+   `DATABASE_URL` yahan database ka **External** URL hoga. Provision command ko `JWT_SECRET` ya `CORS_ORIGIN` ki zaroorat nahi hoti.
+3. Project root mein PowerShell kholo aur chalao:
+
+   ```powershell
    npm run provision:authority
    ```
 
-3. Name, email, department, designation, official ID aur kam-se-kam 12 characters ka password enter karo.
-4. Email Render ke `ADMIN_EMAIL` se bilkul match hona chahiye. Sirf ye account Admin Dashboard ke registered users dekh sakta hai.
-5. `Authority account created` dikhne ke baad deployed site par us account se login karo.
+4. Prompt par name, `ADMIN_EMAIL` se exact-match email, department, designation, official ID, aur kam-se-kam 12-character password enter karo. Password masked rahega.
+5. `Authority account created` dikhne ke baad local `.env` se temporary production database/secrets values hata do.
+6. Deployed website par isi account se login karke `/admin.html` kholo. Sirf ye configured admin email user/login statistics dekh sakta hai.
+
+Admin account ek hi baar create hota hai. Dobara provision karne par duplicate-account error aayega; existing account ho to usi se login karo.
 
 ## 7. Final Test Karo
 
