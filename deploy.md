@@ -87,4 +87,24 @@ Frontend aur backend ek hi Render Web Service par deploy honge. Alag frontend se
 4. Test report submit karke refresh karo; report dikhni chahiye.
 5. Browser Developer Tools ke **Network** tab mein `/api/realtime/stream` request open karke SSE connection check karo.
 
+## Render Mein `Cannot find module .../node_modules/backend/server.js` Error
+
+1. Render Dashboard mein apni Web Service kholo.
+2. **Settings** > **Build & Deploy** kholo.
+3. **Root Directory** ko blank karo. Is field mein `node_modules` ya `backend` nahi hona chahiye; repository root mein `package.json` hai.
+4. **Build Command** `npm ci` aur **Start Command** `npm start` set karo.
+5. **Save Changes** dabao.
+6. **Manual Deploy** > **Deploy latest commit** chuno.
+7. Logs mein `npm start` aur successful server start check karo.
+
+## PostgreSQL `getaddrinfo ENOTFOUND` Error
+
+1. Render Dashboard mein PostgreSQL database kholo. Status **Available** hona chahiye.
+2. Database ke **Connect** menu se poora **Internal Database URL** copy karo. URL `postgresql://` se shuru hota hai; sirf hostname copy mat karo.
+3. Confirm karo ki web service aur PostgreSQL database same Render account aur same region mein hain.
+4. Web Service > **Environment** kholo. `DATABASE_URL` ki poori value ko copied URL se replace karo. Value ke aage/peeche quotes ya spaces mat rakho.
+5. **Save Changes** dabao aur redeploy complete hone ka wait karo.
+6. Logs mein `PostgreSQL connected successfully` check karo.
+7. Agar service aur database same region mein nahi rakh sakte, database ke **Connect** menu se **External Database URL** use karo.
+
 Production database par `npm run seed` mat chalao; ye existing records delete karta hai aur demo data insert karta hai. Sample alert, sensor, route aur weather data ko real emergency information mat samjho.

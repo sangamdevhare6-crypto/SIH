@@ -273,21 +273,14 @@ const RadarApp = {
 
 
         /* ======================================================
-           DARK BASEMAP
-           ======================================================
-
-           OpenStreetMap is intentionally used here instead
-           of the previous CARTO URL.
-
-           This makes the base map reliable and avoids the
-           broken / fragmented tile appearance.
+           DARK CARTO BASEMAP
         ====================================================== */
 
         this.darkTileLayer =
             L.tileLayer(
-                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                 {
-                    maxZoom: 19,
+                    maxZoom: 18,
 
                     minZoom: 2,
 
@@ -298,7 +291,7 @@ const RadarApp = {
                     keepBuffer: 2,
 
                     attribution:
-                        '&copy; OpenStreetMap contributors'
+                        '&copy; OpenStreetMap contributors, &copy; CARTO'
                 }
             );
 
@@ -568,7 +561,7 @@ const RadarApp = {
 
         this.liveRadarLayer =
             L.tileLayer(
-                '/api/radar/tile/{z}/{x}/{y}',
+                '/api/weather/radar/tile/{z}/{x}/{y}',
                 {
 
                     opacity: 0.68,
