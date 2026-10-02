@@ -29,9 +29,9 @@ module.exports = {
   DATABASE_URL: process.env.DATABASE_URL || '',
   JWT_SECRET: process.env.JWT_SECRET || 'local-development-only-change-me',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
-  WEATHER_API_KEY: process.env.WEATHER_API_KEY || 'cb1_41g9_1_09a03975872c02f8446da851',
-  MAP_API_KEY: process.env.MAP_API_KEY || '005178bbfe1f1c9e7a2dd089edd7145c',
-  RADAR_API_KEY: process.env.RADAR_API_KEY || 'Wp8LXBe5AQkNu9dq1Rx3wI9AMA7A1AOs',
+  WEATHER_API_KEY: process.env.WEATHER_API_KEY || 'demo_weather_key',
+  MAP_API_KEY: process.env.MAP_API_KEY || 'demo_map_key',
+  RADAR_API_KEY: process.env.RADAR_API_KEY || 'demo_radar_key',
   CORS_ORIGIN: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
   SEED_DEMO_DATA: process.env.SEED_DEMO_DATA === 'true'
 };
