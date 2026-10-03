@@ -8,7 +8,8 @@
     "dev": "node backend/server.js",
     "seed": "node backend/scripts/seed.js",
     "test": "node backend/scripts/verify-all.js",
-    "provision:authority": "node backend/scripts/provision-authority.js"
+    "provision:authority": "node backend/scripts/provision-authority.js",
+    "reset:admin": "node backend/scripts/reset-admin-password.js"
   },
   "keywords": [
     "disaster-management",

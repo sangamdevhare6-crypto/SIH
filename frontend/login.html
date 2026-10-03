@@ -138,7 +138,9 @@
       document.getElementById('fill-authority').addEventListener('click', () => {
         setRole('AUTHORITY');
         identifierInput.value = 'admin@worldmonitor.gov.in';
-        passwordInput.value = 'AdminPassword@123';
+        passwordInput.value = ''; // Admin password is private — enter manually
+        passwordInput.focus();
+        passwordInput.placeholder = 'Admin password enter karein...';
       });
 
       // Submit Login
@@ -169,11 +171,18 @@
         }
       });
 
-      // Google Mock
+      // Google Mock — only auto-fill for citizen, not admin
       document.getElementById('google-login-btn').addEventListener('click', () => {
-        identifierInput.value = currentRole === 'AUTHORITY' ? 'admin@worldmonitor.gov.in' : 'citizen@worldmonitor.org';
-        passwordInput.value = currentRole === 'AUTHORITY' ? 'AdminPassword@123' : 'CitizenPassword@123';
-        form.requestSubmit();
+        if (currentRole === 'CITIZEN') {
+          identifierInput.value = 'citizen@worldmonitor.org';
+          passwordInput.value = 'CitizenPassword@123';
+          form.requestSubmit();
+        } else {
+          // Authority: only fill email, never auto-fill password
+          identifierInput.value = 'admin@worldmonitor.gov.in';
+          passwordInput.value = '';
+          passwordInput.focus();
+        }
       });
     });
   </script>

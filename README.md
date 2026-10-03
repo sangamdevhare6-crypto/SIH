@@ -190,14 +190,14 @@ Open your browser and navigate to:
 
 ## 🔐 6. Pre-Configured Test Credentials
 
-For quick evaluation, click the demo buttons on the login screen or enter manually:
+For quick evaluation, a demo citizen account is available on the login screen. Authority admin credentials are private and managed separately by the system administrator.
 
 | Role | Email Address | Password | Privileges |
 | :--- | :--- | :--- | :--- |
-| **AUTHORITY** | `admin@worldmonitor.gov.in` | `AdminPassword@123` | Broadcast alerts, update citizen reports, inspect sensors, manage emergency assets |
 | **CITIZEN** | `citizen@worldmonitor.org` | `CitizenPassword@123` | Submit incident reports, view own reports, plan safe evacuation routes, receive warnings |
+| **AUTHORITY** | `admin@worldmonitor.gov.in` | *(Private — Contact Admin)* | Broadcast alerts, update citizen reports, inspect sensors, manage emergency assets |
 
-These demo credentials are for local evaluation only. Production databases are not seeded with demo accounts.
+> **Note:** Authority account credentials are not publicly documented. Contact the system administrator for access.
 
 ---
 

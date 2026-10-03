@@ -3,229 +3,235 @@
 
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>WORLD MONITOR — Admin Dashboard</title>
-
-  <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-  >
-
-  <link
-    rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&display=swap"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WORLD MONITOR — Admin Command Centre</title>
+  <meta name="description"
+    content="Secure admin dashboard for World Monitor — view registered users, login statistics, and platform health.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/global.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/admin-premium.css">
 </head>
-
 
 <body class="admin-page">
 
-  <div class="admin-shell">
+  <!-- ACCESS DENIED SCREEN -->
+  <div id="accessDeniedScreen" class="access-screen hidden">
+    <div class="access-card">
+      <div class="access-icon">🔐</div>
+      <h2>Secure Admin Area</h2>
+      <p id="accessMsg">Yeh page sirf admin ke liye hai.</p>
+      <a href="/login.html?redirect=%2Fadmin.html" class="access-btn">Authority Account se Login Karen</a>
+    </div>
+  </div>
+
+  <!-- MAIN SHELL -->
+  <div class="admin-shell" id="adminShell">
 
     <!-- SIDEBAR -->
-
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar" id="sidebar">
 
       <div class="brand">
-
-        <span class="brand-dot"></span>
-
+        <div class="brand-pulse"></div>
         <div>
           <strong>WORLD MONITOR</strong>
           <small>ADMIN COMMAND</small>
         </div>
-
       </div>
 
+      <!-- Admin Info Box -->
+      <div class="admin-profile-box">
+        <div class="admin-avatar">👮</div>
+        <div>
+          <div class="admin-name" id="sidebarAdminName">Admin</div>
+          <div class="admin-email" id="sidebarAdminEmail">—</div>
+        </div>
+      </div>
 
       <nav>
-
-        <a
-          class="active"
-          href="/admin.html"
-        >
-          Overview
+        <a href="#overview" class="nav-link active" data-section="overview">
+          <span class="nav-icon">📊</span> Overview
         </a>
-
-        <a href="#users">
-          Registered Users
+        <a href="#users" class="nav-link" data-section="users">
+          <span class="nav-icon">👥</span> Registered Users
         </a>
-
-        <a href="/dashboard.html">
-          Main Dashboard
+        <a href="#logins" class="nav-link" data-section="logins">
+          <span class="nav-icon">🔑</span> Login Activity
         </a>
-
+        <a href="/dashboard.html" class="nav-link external">
+          <span class="nav-icon">🌐</span> Main Dashboard
+        </a>
       </nav>
 
-
-      <button
-        id="logoutBtn"
-        class="logout-btn"
-      >
-        Logout
-      </button>
+      <div class="sidebar-footer">
+        <div class="live-indicator">
+          <span class="live-dot"></span> Live — Auto refresh 30s
+        </div>
+        <button id="logoutBtn" class="logout-btn">⏻ Logout</button>
+      </div>
 
     </aside>
 
-
-    <!-- MAIN -->
-
+    <!-- MAIN CONTENT -->
     <main class="admin-main">
 
-      <header class="admin-header">
+      <!-- TOP BAR -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+          <div>
+            <p class="eyebrow">SECURE ADMIN AREA</p>
+            <h1>Admin Command Centre</h1>
+          </div>
+        </div>
+        <div class="top-bar-right">
+          <div class="last-refresh" id="lastRefresh">—</div>
+          <button id="refreshBtn" class="refresh-btn">
+            <span id="refreshIcon">↻</span> Refresh
+          </button>
+        </div>
+      </header>
 
-        <div>
+      <!-- ===== OVERVIEW SECTION ===== -->
+      <section id="section-overview">
 
-          <p class="eyebrow">
-            SECURE ADMIN AREA
-          </p>
+        <!-- STATS GRID -->
+        <div class="stats-grid">
 
-          <h1>
-            User Management
-          </h1>
+          <article class="stat-card cyan">
+            <div class="stat-icon">👤</div>
+            <div class="stat-body">
+              <span class="stat-label">Total Accounts</span>
+              <strong class="stat-value" id="totalUsers">—</strong>
+              <small class="stat-sub">Sabhi registered accounts</small>
+            </div>
+            <div class="stat-glow"></div>
+          </article>
 
-          <p class="muted">
-            Monitor accounts created on the WORLD MONITOR platform.
-          </p>
+          <article class="stat-card green">
+            <div class="stat-icon">✅</div>
+            <div class="stat-body">
+              <span class="stat-label">Active Accounts</span>
+              <strong class="stat-value" id="activeUsers">—</strong>
+              <small class="stat-sub">Enabled accounts</small>
+            </div>
+            <div class="stat-glow"></div>
+          </article>
+
+          <article class="stat-card blue">
+            <div class="stat-icon">🏘️</div>
+            <div class="stat-body">
+              <span class="stat-label">Citizens</span>
+              <strong class="stat-value" id="citizens">—</strong>
+              <small class="stat-sub">Citizen registrations</small>
+            </div>
+            <div class="stat-glow"></div>
+          </article>
+
+          <article class="stat-card purple">
+            <div class="stat-icon">🛡️</div>
+            <div class="stat-body">
+              <span class="stat-label">Authorities</span>
+              <strong class="stat-value" id="authorities">—</strong>
+              <small class="stat-sub">Authority accounts</small>
+            </div>
+            <div class="stat-glow"></div>
+          </article>
+
+          <article class="stat-card orange">
+            <div class="stat-icon">🔓</div>
+            <div class="stat-body">
+              <span class="stat-label">Unique Logins</span>
+              <strong class="stat-value" id="loggedInUsers">—</strong>
+              <small class="stat-sub">Users jo login kar chuke hain</small>
+            </div>
+            <div class="stat-glow"></div>
+          </article>
+
+          <article class="stat-card red">
+            <div class="stat-icon">📈</div>
+            <div class="stat-body">
+              <span class="stat-label">Total Login Events</span>
+              <strong class="stat-value" id="totalLogins">—</strong>
+              <small class="stat-sub">Sabhi successful sign-ins</small>
+            </div>
+            <div class="stat-glow"></div>
+          </article>
 
         </div>
 
+        <!-- CHARTS ROW -->
+        <div class="chart-row">
 
-        <button
-          id="refreshBtn"
-          class="refresh-btn"
-        >
-          ↻ Refresh
-        </button>
+          <div class="chart-panel">
+            <div class="chart-panel-head">
+              <h2>User Distribution</h2>
+              <p>Citizens vs Authorities</p>
+            </div>
+            <div class="donut-wrap">
+              <svg viewBox="0 0 200 200" class="donut-svg">
+                <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(0,245,255,0.08)" stroke-width="28" />
+                <circle id="donutCitizen" cx="100" cy="100" r="70" fill="none" stroke="#00f5ff" stroke-width="28"
+                  stroke-dasharray="0 440" stroke-linecap="round" transform="rotate(-90 100 100)"
+                  style="transition:stroke-dasharray 1.2s ease" />
+                <circle id="donutAuthority" cx="100" cy="100" r="70" fill="none" stroke="#b58cff" stroke-width="28"
+                  stroke-dasharray="0 440" stroke-linecap="round" transform="rotate(-90 100 100)"
+                  style="transition:stroke-dasharray 1.2s ease" />
+              </svg>
+              <div class="donut-center">
+                <strong id="donutTotal">0</strong>
+                <span>Total</span>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="legend-item">
+                <span class="legend-dot cyan-dot"></span>
+                <span>Citizens — <b id="legendCitizen">0</b></span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot purple-dot"></span>
+                <span>Authorities — <b id="legendAuthority">0</b></span>
+              </div>
+            </div>
+          </div>
 
-      </header>
+          <div class="chart-panel">
+            <div class="chart-panel-head">
+              <h2>Login Activity</h2>
+              <p>Registered vs Login karne wale vs Never logged in</p>
+            </div>
+            <div class="bar-chart-wrap" id="barChart">
+              <!-- Bars injected by JS -->
+            </div>
+          </div>
 
-
-
-      <!-- STATISTICS -->
-
-      <section
-        class="stats-grid"
-        aria-label="User statistics"
-      >
-
-        <article class="stat-card">
-
-          <span>
-            Total Accounts
-          </span>
-
-          <strong id="totalUsers">
-            —
-          </strong>
-
-          <small>
-            All registered accounts
-          </small>
-
-        </article>
-
-
-        <article class="stat-card">
-
-          <span>
-            Active Accounts
-          </span>
-
-          <strong id="activeUsers">
-            —
-          </strong>
-
-          <small>
-            Enabled accounts
-          </small>
-
-        </article>
-
-
-        <article class="stat-card">
-
-          <span>
-            Citizens
-          </span>
-
-          <strong id="citizens">
-            —
-          </strong>
-
-          <small>
-            Citizen registrations
-          </small>
-
-        </article>
-
-
-        <article class="stat-card">
-
-          <span>
-            Authorities
-          </span>
-
-          <strong id="authorities">
-            —
-          </strong>
-
-          <small>
-            Authority accounts
-          </small>
-
-        </article>
-
-        <article class="stat-card">
-          <span>Users Logged In</span>
-          <strong id="loggedInUsers">—</strong>
-          <small>Unique accounts with a successful login</small>
-        </article>
-
-        <article class="stat-card">
-          <span>Total Logins</span>
-          <strong id="totalLogins">—</strong>
-          <small>Successful sign-in events</small>
-        </article>
+        </div>
 
       </section>
 
-
-
-      <!-- USERS -->
-
-      <section
-        class="panel"
-        id="users"
-      >
+      <!-- ===== USERS TABLE SECTION ===== -->
+      <section id="section-users" class="panel mt-20">
 
         <div class="panel-head">
 
           <div>
-
-            <h2>
-              Registered Users
-            </h2>
-
-            <p>
-              Latest accounts created on the platform.
-            </p>
-
+            <h2>👥 Registered Users</h2>
+            <p>Platform par sabhi accounts — latest pehle dikhenge</p>
+          </div>
+          <div class="panel-controls">
+            <input type="text" id="searchInput" placeholder="🔍 Naam ya email se dhundhe..." class="search-input">
+            <select id="roleFilter" class="role-filter">
+              <option value="">Sabhi Roles</option>
+              <option value="CITIZEN">Citizen</option>
+              <option value="AUTHORITY">Authority</option>
+            </select>
+            <span id="statusText" class="status-pill">Loading…</span>
           </div>
 
 
-          <span
-            id="statusText"
-            class="status-pill"
-          >
+          <span id="statusText" class="status-pill">
             Loading…
           </span>
 
@@ -233,51 +239,56 @@
 
 
         <div class="table-wrap">
-
-          <table>
-
+          <table id="usersTable">
             <thead>
 
               <tr>
-                <th>Name</th>
+                <th>#</th>
+                <th>User</th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Role</th>
                 <th>Logins</th>
                 <th>Last Login</th>
                 <th>Status</th>
-                <th>Created</th>
+                <th>Registered</th>
               </tr>
-
             </thead>
-
-
             <tbody id="usersBody">
-
               <tr>
-                <td
-                  colspan="8"
-                  class="empty"
-                >
+                <td colspan="9" class="empty">
+                  <div class="loading-spinner"></div>
                   Loading users…
                 </td>
               </tr>
-
             </tbody>
-
           </table>
+        </div>
 
+        <div class="table-footer">
+          <span id="showingCount"></span>
         </div>
 
       </section>
 
-    </main>
+      <!-- ===== LOGIN ACTIVITY SECTION ===== -->
+      <section id="section-logins" class="panel mt-20">
+        <div class="panel-head">
+          <div>
+            <h2>🔑 Most Active Users</h2>
+            <p>Sabse zyada login karne wale users</p>
+          </div>
+        </div>
+        <div id="loginTimeline" class="login-timeline">
+          <p class="empty">Data load ho raha hai…</p>
+        </div>
+      </section>
 
+    </main>
   </div>
 
-
   <script src="/js/api.js"></script>
-  <script src="/js/admin.js"></script>
+  <script src="/js/admin-premium.js"></script>
 
 </body>
 

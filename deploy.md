@@ -136,3 +136,20 @@ Admin account ek hi baar create hota hai. Dobara provision karne par duplicate-a
 7. Agar service aur database same region mein nahi rakh sakte, database ke **Connect** menu se **External Database URL** use karo.
 
 Production database par `npm run seed` mat chalao; ye existing records delete karta hai aur demo data insert karta hai. Sample alert, sensor, route aur weather data ko real emergency information mat samjho.
+
+## Admin Password Reset Karna
+
+Agar admin password bhool gaye, Render Shell se reset karo:
+
+1. Render Dashboard mein apni Web Service kholo.
+2. **Shell** tab kholke ye command chalao:
+
+   ```bash
+   npm run reset:admin
+   ```
+
+3. Script `ADMIN_EMAIL` se admin account dhundhegi aur naya password maangegi (masked input).
+4. Password confirm karne par hash database mein update ho jayega.
+5. Naye password se `https://YOUR-SERVICE.onrender.com/login.html` par login karo aur `/admin.html` kholo.
+
+> **Note:** Render Shell nahi hai to local PowerShell se bhi chala sakte ho — External Database URL `.env` mein set karo (Step 6 ke method se) aur phir `npm run reset:admin` chalao.

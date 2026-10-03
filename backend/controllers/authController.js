@@ -443,6 +443,90 @@ async function forgotPassword(req, res, next) {
   }
 }
 
+// 8. Reset Authority Password (Admin-only: requires matching ADMIN_EMAIL + current password)
+async function resetAuthorityPassword(req, res, next) {
+  try {
+    const { email, current_password, new_password, confirm_new_password } = req.body;
+
+    if (!email || !current_password || !new_password) {
+      return res.status(400).json({
+        success: false,
+        error: 'email, current_password, and new_password are required'
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Only allow reset for the configured ADMIN_EMAIL (authority account)
+    if (cleanEmail !== config.ADMIN_EMAIL.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        error: 'Password reset via this endpoint is only permitted for the configured authority account'
+      });
+    }
+
+    if (confirm_new_password && new_password !== confirm_new_password) {
+      return res.status(400).json({ success: false, error: 'New passwords do not match' });
+    }
+
+    if (new_password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'New password must be at least 8 characters'
+      });
+    }
+
+    if (isPostgresLive()) {
+      const pool = getPool();
+      const r = await pool.query(
+        "SELECT id, password_hash, role FROM users WHERE LOWER(email) = $1",
+        [cleanEmail]
+      );
+      if (r.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Authority account not found' });
+      }
+      const user = r.rows[0];
+
+      if (user.role !== 'AUTHORITY') {
+        return res.status(403).json({ success: false, error: 'This endpoint is only for AUTHORITY accounts' });
+      }
+
+      const matches = await comparePassword(current_password, user.password_hash);
+      if (!matches) {
+        return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+      }
+
+      const newHash = await hashPassword(new_password);
+      await pool.query(
+        'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [newHash, user.id]
+      );
+    } else {
+      const user = memoryStore.users.find(u => u.email.toLowerCase() === cleanEmail);
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'Authority account not found' });
+      }
+      if (user.role !== 'AUTHORITY') {
+        return res.status(403).json({ success: false, error: 'This endpoint is only for AUTHORITY accounts' });
+      }
+
+      const matches = await comparePassword(current_password, user.password_hash);
+      if (!matches) {
+        return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+      }
+
+      user.password_hash = await hashPassword(new_password);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Authority account password has been reset successfully. Please log in with your new credentials.'
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // 8. Logout
 function logout(req, res) {
   return res.json({
@@ -459,5 +543,6 @@ module.exports = {
   updateProfile,
   changePassword,
   forgotPassword,
+  resetAuthorityPassword,
   logout
 };
