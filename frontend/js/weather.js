@@ -43,14 +43,14 @@ const WeatherApp = {
     const uvEl = document.getElementById('weather-uv');
     const aqiEl = document.getElementById('weather-aqi');
 
-    if (tempEl) tempEl.textContent = `${data.temperature}°C`;
-    if (condEl) condEl.textContent = data.condition;
-    if (rainEl) rainEl.textContent = `${data.rainfall_mm} mm`;
-    if (humEl) humEl.textContent = `${data.humidity}%`;
-    if (windEl) windEl.textContent = `${data.wind_speed} km/h (${data.wind_direction || 'NW'})`;
-    if (pressEl) pressEl.textContent = `${data.pressure} hPa`;
-    if (visEl) visEl.textContent = `${data.visibility || 4.2} km`;
-    if (uvEl) uvEl.textContent = `${data.uv_index || 3} Moderate`;
+    if (tempEl) tempEl.textContent = data.temperature != null ? `${data.temperature}°C` : '—°C';
+    if (condEl) condEl.textContent = data.condition || '—';
+    if (rainEl) rainEl.textContent = data.rainfall_mm != null ? `${data.rainfall_mm} mm` : '— mm';
+    if (humEl) humEl.textContent = data.humidity != null ? `${data.humidity}%` : '—%';
+    if (windEl) windEl.textContent = data.wind_speed != null ? `${data.wind_speed} km/h (${data.wind_direction || 'N/A'})` : '— km/h';
+    if (pressEl) pressEl.textContent = data.pressure != null ? `${data.pressure} hPa` : '— hPa';
+    if (visEl) visEl.textContent = `${data.visibility ?? 4.2} km`;
+    if (uvEl) uvEl.textContent = `${data.uv_index ?? 3} Moderate`;
     if (aqiEl) aqiEl.textContent = data.air_quality || 'Moderate (AQI 65)';
 
     // Render 7-Day Forecast if container exists

@@ -61,7 +61,7 @@ const AlertsApp = {
     const isAuthority = Auth.getRole() === 'AUTHORITY';
 
     tbody.innerHTML = this.alertsList.map(a => {
-      const timeStr = new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+      const timeStr = new Date(a.created_at).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
       const badgeClass = a.risk_level === 'Very High' ? 'badge-danger' : (a.risk_level === 'High' ? 'badge-warning' : 'badge-cyan');
       const statusClass = a.status === 'Active' ? 'badge-danger' : (a.status === 'Monitoring' ? 'badge-warning' : 'badge-success');
 

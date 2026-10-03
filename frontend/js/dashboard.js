@@ -87,12 +87,12 @@ const Dashboard = {
     const pressure = document.getElementById('kpi-pressure');
     const condition = document.getElementById('kpi-condition');
 
-    if (rain) rain.textContent = `${kpis.rainfall_mm} mm`;
-    if (temp) temp.textContent = `${kpis.temperature}°C`;
-    if (humidity) humidity.textContent = `${kpis.humidity}%`;
-    if (wind) wind.textContent = `${kpis.wind_speed} km/h`;
-    if (pressure) pressure.textContent = `${kpis.pressure} hPa`;
-    if (condition) condition.textContent = kpis.condition || 'Severe Downpour';
+    if (rain) rain.textContent = kpis.rainfall_mm != null ? `${kpis.rainfall_mm} mm` : '— mm';
+    if (temp) temp.textContent = kpis.temperature != null ? `${kpis.temperature}°C` : '—°C';
+    if (humidity) humidity.textContent = kpis.humidity != null ? `${kpis.humidity}%` : '—%';
+    if (wind) wind.textContent = kpis.wind_speed != null ? `${kpis.wind_speed} km/h` : '— km/h';
+    if (pressure) pressure.textContent = kpis.pressure != null ? `${kpis.pressure} hPa` : '— hPa';
+    if (condition) condition.textContent = kpis.condition || 'Monitoring...';
   },
 
   renderAlerts(alerts = []) {

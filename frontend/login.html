@@ -15,6 +15,7 @@
 <body class="auth-page-wrapper">
 
   <div class="auth-card-panel animate-fade-in">
+    <div class="scan-box-beam"></div>
     <div class="auth-header">
       <a href="/index.html" class="auth-brand-logo">
         <div class="brand-icon-box">
@@ -60,6 +61,11 @@
       <button type="submit" class="btn btn-primary" id="login-submit-btn" style="width: 100%; padding: 12px;">
         <i data-lucide="log-in"></i> Sign In to Portal
       </button>
+
+      <div id="login-error-msg" style="display:none; margin-top: 10px; padding: 10px 14px; background: rgba(255,51,102,0.12); border: 1px solid rgba(255,51,102,0.4); border-radius: 8px; color: #FF6688; font-size: 0.9rem; align-items: center; gap: 8px;">
+        <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0;"></i>
+        <span id="login-error-text">Invalid credentials</span>
+      </div>
 
       <button type="button" class="btn-google" id="google-login-btn">
         <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.1-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/></svg>
@@ -154,7 +160,13 @@
         if (res.success) {
           window.location.href = '/dashboard.html';
         } else {
-          alert('Login Failed: ' + (res.error || 'Invalid credentials'));
+          const errMsg = document.getElementById('login-error-msg');
+          const errText = document.getElementById('login-error-text');
+          if (errMsg && errText) {
+            errText.textContent = res.error || 'Invalid credentials. Please try again.';
+            errMsg.style.display = 'flex';
+            if (window.lucide) lucide.createIcons();
+          }
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<i data-lucide="log-in"></i> Sign In to Portal';
           if (window.lucide) lucide.createIcons();

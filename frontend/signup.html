@@ -15,6 +15,7 @@
 <body class="auth-page-wrapper">
 
   <div class="auth-card-panel animate-fade-in" style="max-width: 540px;">
+    <div class="scan-box-beam"></div>
     <div class="auth-header">
       <a href="/index.html" class="auth-brand-logo">
         <div class="brand-icon-box">
@@ -66,6 +67,10 @@
       <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">
         <i data-lucide="user-check"></i> Complete Citizen Registration
       </button>
+      <div id="citizen-error-msg" style="display:none; margin-top: 10px; padding: 10px 14px; background: rgba(255,51,102,0.12); border: 1px solid rgba(255,51,102,0.4); border-radius: 8px; color: #FF6688; font-size: 0.9rem; align-items: center; gap: 8px;">
+        <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0;"></i>
+        <span id="citizen-error-text">Error</span>
+      </div>
     </form>
 
     <!-- 2. AUTHORITY SIGNUP FORM -->
@@ -110,6 +115,10 @@
       <button type="submit" class="btn btn-success" style="width: 100%; padding: 12px; margin-top: 8px;">
         <i data-lucide="shield-check"></i> Register Authority Command Account
       </button>
+      <div id="auth-error-msg" style="display:none; margin-top: 10px; padding: 10px 14px; background: rgba(255,51,102,0.12); border: 1px solid rgba(255,51,102,0.4); border-radius: 8px; color: #FF6688; font-size: 0.9rem; align-items: center; gap: 8px;">
+        <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0;"></i>
+        <span id="auth-error-text">Error</span>
+      </div>
     </form>
 
     <div class="auth-divider">Or</div>
@@ -164,11 +173,6 @@
         e.preventDefault();
         const pass = document.getElementById('citizen-pass').value;
         const confPass = document.getElementById('citizen-conf-pass').value;
-        if (pass !== confPass) {
-          alert('Passwords do not match');
-          return;
-        }
-
         const payload = {
           full_name: document.getElementById('citizen-name').value.trim(),
           email: document.getElementById('citizen-email').value.trim(),
@@ -177,11 +181,19 @@
           confirm_password: confPass
         };
 
+        const showCitizenError = (msg) => {
+          const el = document.getElementById('citizen-error-msg');
+          const txt = document.getElementById('citizen-error-text');
+          if (el && txt) { txt.textContent = msg; el.style.display = 'flex'; if (window.lucide) lucide.createIcons(); }
+        };
+
+        if (pass !== confPass) { showCitizenError('Passwords do not match'); return; }
+
         const res = await Auth.registerCitizen(payload);
         if (res.success) {
           window.location.href = '/dashboard.html';
         } else {
-          alert('Registration Error: ' + res.error);
+          showCitizenError(res.error || 'Registration failed. Please try again.');
         }
       });
 
@@ -190,10 +202,13 @@
         e.preventDefault();
         const pass = document.getElementById('auth-pass').value;
         const confPass = document.getElementById('auth-conf-pass').value;
-        if (pass !== confPass) {
-          alert('Passwords do not match');
-          return;
-        }
+        const showAuthError = (msg) => {
+          const el = document.getElementById('auth-error-msg');
+          const txt = document.getElementById('auth-error-text');
+          if (el && txt) { txt.textContent = msg; el.style.display = 'flex'; if (window.lucide) lucide.createIcons(); }
+        };
+
+        if (pass !== confPass) { showAuthError('Passwords do not match'); return; }
 
         const payload = {
           full_name: document.getElementById('auth-name').value.trim(),
@@ -209,7 +224,7 @@
         if (res.success) {
           window.location.href = '/dashboard.html';
         } else {
-          alert('Registration Error: ' + res.error);
+          showAuthError(res.error || 'Registration failed. Please try again.');
         }
       });
     });

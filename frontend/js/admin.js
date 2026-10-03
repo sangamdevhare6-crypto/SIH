@@ -290,6 +290,21 @@
 
 
 
+  // Auto-inject ambient moving cyber boxes
+  if (!document.querySelector('.moving-box-canvas')) {
+    const canvas = document.createElement('div');
+    canvas.className = 'moving-box-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+    canvas.innerHTML = `
+      <div class="cyber-moving-box box-1"><div class="box-inner-glow"></div><div class="box-grid-lines"></div></div>
+      <div class="cyber-moving-box box-2"><div class="box-inner-glow"></div><div class="box-grid-lines"></div></div>
+      <div class="cyber-moving-box box-3"><div class="box-inner-glow"></div><div class="box-grid-lines"></div></div>
+      <div class="cyber-moving-box box-4"><div class="box-inner-glow"></div><div class="box-grid-lines"></div></div>
+      <div class="cyber-moving-box box-5"><div class="box-inner-glow"></div><div class="box-grid-lines"></div></div>
+    `;
+    document.body.prepend(canvas);
+  }
+
   // Initial load
   loadAdmin();
 

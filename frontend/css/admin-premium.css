@@ -211,18 +211,21 @@
   position: relative;
   padding: 24px 22px;
   border-radius: 18px;
-  background: rgba(8,22,40,0.9);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(8, 22, 40, 0.72);
+  border: 1px solid rgba(0, 245, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   overflow: hidden;
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  transition: transform 0.25s, box-shadow 0.25s;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
   animation: fadeInUp 0.5s ease both;
 }
 .stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  transform: translateY(-5px);
+  border-color: rgba(0, 245, 255, 0.5);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 217, 255, 0.35), 0 0 60px rgba(181, 140, 255, 0.18);
 }
 .stat-icon {
   font-size: 28px;

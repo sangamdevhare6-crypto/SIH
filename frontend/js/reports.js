@@ -55,7 +55,7 @@ const ReportsApp = {
     const isAuthority = Auth.getRole() === 'AUTHORITY';
 
     tableBody.innerHTML = this.reportsList.map(r => {
-      const timeStr = new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+      const timeStr = new Date(r.created_at).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
       const statusClass = r.status === 'Resolved' ? 'badge-success' : (r.status === 'In Progress' ? 'badge-warning' : 'badge-danger');
       const priorityClass = r.priority === 'Critical' ? 'badge-danger' : (r.priority === 'High' ? 'badge-warning' : 'badge-cyan');
 
