@@ -1,168 +1,333 @@
 /* ============================================================
-   WORLD MONITOR - CYBERNETIC & HUD ANIMATIONS
+   WORLD MONITOR — PREMIUM ANIMATIONS v2.0
+   Glassmorphism • Wobble • Float • Magnetic • Shimmer
    ============================================================ */
 
-/* 1. Radar Sweep Animation */
+/* ─── 1. RADAR SWEEP ─────────────────────────────────────── */
 @keyframes radar-sweep {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
-
 .radar-sweep-beam {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 50%;
-  height: 50%;
+  position: absolute; top: 50%; left: 50%;
+  width: 50%; height: 50%;
   transform-origin: 0% 0%;
-  background: conic-gradient(from 0deg, rgba(0, 245, 255, 0.4) 0deg, rgba(0, 245, 255, 0.05) 45deg, transparent 60deg);
+  background: conic-gradient(from 0deg, rgba(0,245,255,.4) 0deg, rgba(0,245,255,.05) 45deg, transparent 60deg);
   border-top: 2px solid var(--cyan-bright);
   animation: radar-sweep 4s linear infinite;
-  pointer-events: none;
-  border-radius: 100% 0 0 0;
+  pointer-events: none; border-radius: 100% 0 0 0;
   filter: drop-shadow(0 0 8px var(--cyan-bright));
 }
 
-/* 2. Beacon Marker Pulse */
+/* ─── 2. BEACON PULSE ────────────────────────────────────── */
 @keyframes beacon-pulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 255, 163, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(0, 255, 163, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 255, 163, 0);
-  }
+  0%   { transform: scale(.95); box-shadow: 0 0 0 0 rgba(0,255,163,.7); }
+  70%  { transform: scale(1);   box-shadow: 0 0 0 10px rgba(0,255,163,0); }
+  100% { transform: scale(.95); box-shadow: 0 0 0 0 rgba(0,255,163,0); }
 }
-
 @keyframes beacon-pulse-danger {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.8);
-  }
-  70% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 14px rgba(255, 51, 102, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(255, 51, 102, 0);
-  }
+  0%   { transform: scale(.95); box-shadow: 0 0 0 0 rgba(255,51,102,.8); }
+  70%  { transform: scale(1.05);box-shadow: 0 0 0 14px rgba(255,51,102,0); }
+  100% { transform: scale(.95); box-shadow: 0 0 0 0 rgba(255,51,102,0); }
 }
 
-/* 3. Page Fade In */
+/* ─── 3. FADE IN / SLIDE UP ──────────────────────────────── */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+.animate-fade-in { animation: fadeIn .45s cubic-bezier(.16,1,.3,1) forwards; }
 
-.animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* 4. Card Stagger Slide Up */
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+.animate-slide-up { animation: slideUp .5s cubic-bezier(.16,1,.3,1) forwards; }
 
-.animate-slide-up {
-  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
+.animate-slide-left { animation: slideInLeft .5s cubic-bezier(.16,1,.3,1) forwards; }
 
-/* 5. Neon Border Glow Pulse */
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-zoom-in { animation: zoomIn .4s cubic-bezier(.16,1,.3,1) forwards; }
+
+/* ─── 4. NEON GLOW PULSE ─────────────────────────────────── */
 @keyframes neon-glow-pulse {
-  0%, 100% {
-    border-color: rgba(0, 217, 255, 0.4);
-    box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
-  }
-  50% {
-    border-color: rgba(0, 245, 255, 0.9);
-    box-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
-  }
+  0%,100% { border-color: rgba(0,217,255,.4); box-shadow: 0 0 10px rgba(0,217,255,.2); }
+  50%      { border-color: rgba(0,245,255,.9); box-shadow: 0 0 24px rgba(0,245,255,.55), 0 0 50px rgba(0,245,255,.15); }
 }
+.neon-border-pulsing { animation: neon-glow-pulse 3s infinite ease-in-out; }
 
-.neon-border-pulsing {
-  animation: neon-glow-pulse 3s infinite ease-in-out;
-}
-
-/* 6. Toast Slide In */
+/* ─── 5. TOAST SLIDE IN ──────────────────────────────────── */
 @keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(60px) scale(.9); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
 }
 
-/* 7. Loading Skeleton */
+/* ─── 6. SKELETON SHIMMER ────────────────────────────────── */
 @keyframes skeleton-shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
-
 .skeleton {
-  background: linear-gradient(90deg, rgba(0, 27, 51, 0.6) 25%, rgba(0, 59, 102, 0.8) 50%, rgba(0, 27, 51, 0.6) 75%);
+  background: linear-gradient(90deg, rgba(0,27,51,.6) 25%, rgba(0,59,102,.8) 50%, rgba(0,27,51,.6) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.8s infinite;
   border-radius: var(--radius-sm);
 }
 
-/* 8. Cyber Scanner Line */
+/* ─── 7. CYBER SCANNER LINE ──────────────────────────────── */
 @keyframes scanline {
-  0% {
-    top: 0%;
-  }
-  100% {
-    top: 100%;
-  }
+  0%   { top: 0%; }
+  100% { top: 100%; }
 }
-
 .scanner-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
   background: linear-gradient(90deg, transparent, var(--cyan-bright), transparent);
   box-shadow: 0 0 10px var(--cyan-bright);
   animation: scanline 3.5s linear infinite;
   pointer-events: none;
 }
 
-/* Prefers-reduced-motion compliance */
+/* ─── 8. 🆕 FLOAT / WOBBLE ───────────────────────────────── */
+@keyframes float {
+  0%,100% { transform: translateY(0px) rotate(0deg); }
+  25%      { transform: translateY(-8px) rotate(.5deg); }
+  50%      { transform: translateY(-14px) rotate(0deg); }
+  75%      { transform: translateY(-6px) rotate(-.5deg); }
+}
+.animate-float { animation: float 5s ease-in-out infinite; }
+
+@keyframes wobble {
+  0%,100% { transform: rotate(0deg); }
+  15%      { transform: rotate(-4deg) scale(1.05); }
+  30%      { transform: rotate(3deg) scale(1.03); }
+  45%      { transform: rotate(-2.5deg); }
+  60%      { transform: rotate(1.5deg); }
+  75%      { transform: rotate(-1deg); }
+}
+.animate-wobble { animation: wobble .8s cubic-bezier(.36,.07,.19,.97); }
+.animate-wobble-loop { animation: wobble 2.5s cubic-bezier(.36,.07,.19,.97) infinite; }
+
+/* hover pe wobble */
+.hover-wobble:hover { animation: wobble .6s cubic-bezier(.36,.07,.19,.97); }
+
+@keyframes jelly {
+  0%,100% { transform: scale(1,1); }
+  25%      { transform: scale(.95,1.05); }
+  50%      { transform: scale(1.05,.95); }
+  75%      { transform: scale(.98,1.02); }
+}
+.animate-jelly { animation: jelly .6s ease-in-out; }
+.hover-jelly:hover { animation: jelly .5s ease-in-out; }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  10%,50%,90% { transform: translateX(-5px); }
+  30%,70%     { transform: translateX(5px); }
+}
+.animate-shake { animation: shake .5s ease-in-out; }
+
+/* ─── 9. 🆕 GLASSMORPHISM SHIMMER ───────────────────────── */
+@keyframes glass-shimmer {
+  0%   { background-position: -300% center; }
+  100% { background-position: 300% center; }
+}
+.glass-shimmer::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg,
+    transparent 30%,
+    rgba(255,255,255,.06) 50%,
+    transparent 70%);
+  background-size: 300% 100%;
+  animation: glass-shimmer 4s linear infinite;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ─── 10. 🆕 PARTICLE DRIFT (background orbs) ───────────── */
+@keyframes particle-drift-1 {
+  0%,100% { transform: translate(0,0) scale(1); opacity: .25; }
+  33%      { transform: translate(40px,-60px) scale(1.1); opacity: .4; }
+  66%      { transform: translate(-30px,30px) scale(.9); opacity: .2; }
+}
+@keyframes particle-drift-2 {
+  0%,100% { transform: translate(0,0) scale(1); opacity: .2; }
+  40%      { transform: translate(-50px,-40px) scale(1.15); opacity: .35; }
+  70%      { transform: translate(60px,50px) scale(.85); opacity: .15; }
+}
+@keyframes particle-drift-3 {
+  0%,100% { transform: translate(0,0); opacity: .15; }
+  50%      { transform: translate(30px,-80px); opacity: .3; }
+}
+
+.bg-orb {
+  position: fixed; border-radius: 50%;
+  filter: blur(80px); pointer-events: none; z-index: -1;
+}
+.bg-orb-1 {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(0,217,255,.18) 0%, transparent 70%);
+  top: -100px; left: -80px;
+  animation: particle-drift-1 14s ease-in-out infinite;
+}
+.bg-orb-2 {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(181,140,255,.15) 0%, transparent 70%);
+  bottom: -80px; right: -60px;
+  animation: particle-drift-2 18s ease-in-out infinite;
+}
+.bg-orb-3 {
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(0,255,163,.12) 0%, transparent 70%);
+  top: 50%; left: 60%;
+  animation: particle-drift-3 22s ease-in-out infinite;
+}
+
+/* ─── 11. 🆕 TYPEWRITER CURSOR ──────────────────────────── */
+@keyframes blink-cursor {
+  0%,100% { border-right-color: var(--cyan-bright); }
+  50%      { border-right-color: transparent; }
+}
+.typewriter {
+  border-right: 2px solid var(--cyan-bright);
+  animation: blink-cursor 1s step-end infinite;
+  white-space: nowrap; overflow: hidden;
+}
+
+/* ─── 12. 🆕 GLITCH TEXT ─────────────────────────────────── */
+@keyframes glitch-skew {
+  0%,100% { transform: skewX(0deg); }
+  2%       { transform: skewX(-3deg); }
+  4%       { transform: skewX(3deg); }
+  6%       { transform: skewX(-1deg); }
+  8%       { transform: skewX(0deg); }
+}
+@keyframes glitch-clip-1 {
+  0%,100% { clip-path: inset(50% 0 30% 0); transform: translate(-2px,0); }
+  20%      { clip-path: inset(10% 0 60% 0); transform: translate(2px,0); }
+  40%      { clip-path: inset(70% 0 5% 0);  transform: translate(-1px,0); }
+}
+@keyframes glitch-clip-2 {
+  0%,100% { clip-path: inset(30% 0 50% 0); transform: translate(2px,0); }
+  20%      { clip-path: inset(60% 0 10% 0); transform: translate(-2px,0); }
+  40%      { clip-path: inset(5% 0 70% 0);  transform: translate(1px,0); }
+}
+.glitch-text { position: relative; animation: glitch-skew 4s infinite linear alternate-reverse; }
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.glitch-text::before {
+  color: var(--cyan-bright); opacity: .7;
+  animation: glitch-clip-1 3s infinite linear alternate-reverse;
+}
+.glitch-text::after {
+  color: var(--danger-crimson); opacity: .5;
+  animation: glitch-clip-2 2.5s infinite linear alternate-reverse;
+}
+
+/* ─── 13. 🆕 NUMBER COUNTER SPIN ────────────────────────── */
+@keyframes count-up-flash {
+  0%   { color: var(--cyan-bright); text-shadow: 0 0 20px var(--cyan-bright); }
+  100% { color: inherit; text-shadow: none; }
+}
+.count-flash { animation: count-up-flash .6s ease-out; }
+
+/* ─── 14. 🆕 RIPPLE ON CLICK ─────────────────────────────── */
+@keyframes ripple-out {
+  to { transform: scale(4); opacity: 0; }
+}
+.ripple-container { position: relative; overflow: hidden; }
+.ripple-wave {
+  position: absolute; border-radius: 50%;
+  transform: scale(0); animation: ripple-out .6s linear;
+  background: rgba(0,245,255,.25); pointer-events: none;
+}
+
+/* ─── 15. 🆕 CARD ENTRANCE (stagger) ────────────────────── */
+@keyframes card-pop {
+  0%   { opacity: 0; transform: translateY(30px) scale(.95); }
+  60%  { transform: translateY(-4px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-pop { animation: card-pop .6s cubic-bezier(.16,1,.3,1) forwards; }
+
+/* stagger delays */
+.delay-1 { animation-delay: .05s; }
+.delay-2 { animation-delay: .10s; }
+.delay-3 { animation-delay: .15s; }
+.delay-4 { animation-delay: .20s; }
+.delay-5 { animation-delay: .25s; }
+.delay-6 { animation-delay: .30s; }
+
+/* ─── 16. 🆕 HOVER LIFT (magnetic feel) ─────────────────── */
+.hover-lift {
+  transition: transform .25s cubic-bezier(.16,1,.3,1),
+              box-shadow .25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 20px 40px rgba(0,0,0,.5), 0 0 30px rgba(0,217,255,.2);
+}
+
+/* ─── 17. 🆕 SPIN / ORBIT ────────────────────────────────── */
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+
+@keyframes orbit {
+  to { transform: rotate(360deg) translateX(24px) rotate(-360deg); }
+}
+.animate-orbit { animation: orbit 3s linear infinite; }
+
+/* ─── 18. 🆕 BORDER GRADIENT ROTATE ─────────────────────── */
+@keyframes border-spin {
+  to { --border-angle: 360deg; }
+}
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.glass-border-spin {
+  border: 1.5px solid transparent;
+  background-image:
+    linear-gradient(var(--bg-card), var(--bg-card)),
+    conic-gradient(from var(--border-angle), #00d9ff, #b58cff, #00ffa3, #00d9ff);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: border-spin 4s linear infinite;
+}
+
+/* ─── 19. 🆕 STATUS ALERT SLIDE ─────────────────────────── */
+@keyframes alert-bounce-in {
+  0%   { opacity: 0; transform: scale(.8) translateY(-20px); }
+  60%  { transform: scale(1.04) translateY(4px); }
+  80%  { transform: scale(.98); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-alert-in { animation: alert-bounce-in .5s cubic-bezier(.16,1,.3,1) forwards; }
+
+/* ─── 20. 🆕 PROGRESS BAR FILL ──────────────────────────── */
+@keyframes progress-fill {
+  from { width: 0%; }
+}
+.progress-bar-animated { animation: progress-fill 1.2s cubic-bezier(.16,1,.3,1) forwards; }
+
+/* ─── Prefers-reduced-motion compliance ───────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
 }

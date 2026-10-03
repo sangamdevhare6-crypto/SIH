@@ -15,6 +15,12 @@
 </head>
 <body class="hero-landing-wrapper">
 
+  <!-- Glassmorphism Background Orbs -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+
+
   <!-- Top Navigation Bar -->
   <header class="landing-navbar">
     <a href="/index.html" class="brand-container">
@@ -104,8 +110,8 @@
       <div class="modal-body">
         <div class="role-cards-container" style="max-width: 100%;">
           <!-- Citizen Card -->
-          <div class="role-card">
-            <div class="role-icon-box">
+          <div class="role-card hover-lift glass-card card-pop delay-1">
+            <div class="role-icon-box animate-float">
               <i data-lucide="users" style="width: 36px; height: 36px;"></i>
             </div>
             <div class="role-title">CITIZEN</div>
@@ -118,8 +124,8 @@
           </div>
 
           <!-- Authority Card -->
-          <div class="role-card role-authority">
-            <div class="role-icon-box">
+          <div class="role-card role-authority hover-lift glass-card card-pop delay-2">
+            <div class="role-icon-box animate-float" style="animation-delay:.5s">
               <i data-lucide="shield" style="width: 36px; height: 36px;"></i>
             </div>
             <div class="role-title" style="color: var(--green-neon);">AUTHORITY</div>
@@ -155,6 +161,20 @@
 
       modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModal();
+      });
+
+      // ── Ripple effect on all buttons ──
+      document.querySelectorAll('.btn').forEach(btn => {
+        btn.classList.add('ripple-container');
+        btn.addEventListener('click', function(e) {
+          const r = document.createElement('span');
+          r.classList.add('ripple-wave');
+          const rect = this.getBoundingClientRect();
+          const size = Math.max(rect.width, rect.height);
+          r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+          this.appendChild(r);
+          setTimeout(() => r.remove(), 700);
+        });
       });
     });
   </script>
