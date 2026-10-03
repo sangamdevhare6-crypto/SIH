@@ -194,6 +194,7 @@ For quick evaluation, a demo citizen account is available on the login screen. A
 
 | Role | Email Address | Password | Privileges |
 | :--- | :--- | :--- | :--- |
+| **AUTHORITY** | `admin@worldmonitor.gov.in` | `AdminPassword@123` | Broadcast alerts, update citizen reports, inspect sensors, manage emergency assets |
 | **CITIZEN** | `citizen@worldmonitor.org` | `CitizenPassword@123` | Submit incident reports, view own reports, plan safe evacuation routes, receive warnings |
 | **AUTHORITY** | `admin@worldmonitor.gov.in` | *(Private — Contact Admin)* | Broadcast alerts, update citizen reports, inspect sensors, manage emergency assets |
 
