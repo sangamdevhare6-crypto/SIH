@@ -86,7 +86,7 @@ async function provisionAuthority() {
 
   const pool = new Pool({
     connectionString: config.DATABASE_URL,
-    ssl: config.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: { rejectUnauthorized: false }
   });
 
   try {
