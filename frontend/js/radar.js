@@ -207,6 +207,20 @@ const RadarApp = {
             });
         }
 
+        window.addEventListener('wm:city_changed', (event) => {
+            if (event.detail && event.detail.city) {
+                if (citySelect && citySelect.value !== event.detail.city) {
+                    const match = Array.from(citySelect.options).find(
+                        opt => opt.value.toLowerCase() === event.detail.city.toLowerCase()
+                    );
+                    if (match) {
+                        citySelect.value = match.value;
+                    }
+                }
+                this.loadCityByName(event.detail.city);
+            }
+        });
+
         window.addEventListener('wm:user_location', (event) => {
             this.loadCurrentLocation(event.detail);
         });
@@ -404,6 +418,18 @@ const RadarApp = {
     async loadCityByName(city) {
         if (!city || !this.map) return;
 
+        // 1. Instantly move the radar map to the chosen city
+        const coords = (window.getCityCoordinates ? window.getCityCoordinates(city) : null) || [19.8762, 75.3433];
+        const instantLocation = {
+            name: city,
+            state: '',
+            country: 'IN',
+            latitude: coords[0],
+            longitude: coords[1],
+            zoom: 11
+        };
+        this.applyRadarLocation(instantLocation);
+
         const requestId = ++this.citySelectionRequestId;
         this.setCityWeatherLoading(city);
 
@@ -414,20 +440,25 @@ const RadarApp = {
 
             if (requestId !== this.citySelectionRequestId) return;
 
-            const weather = response.data;
-            const location = {
-                name: weather.city,
-                state: weather.state,
-                country: weather.country,
-                latitude: weather.latitude,
-                longitude: weather.longitude
-            };
+            const weather = response && response.data ? response.data : null;
+            if (weather) {
+                const location = {
+                    name: weather.city || city,
+                    state: weather.state || '',
+                    country: weather.country || 'IN',
+                    latitude: Number(weather.latitude) || coords[0],
+                    longitude: Number(weather.longitude) || coords[1],
+                    zoom: 11
+                };
 
-            this.applyRadarLocation(location);
-            this.renderCityWeather(weather, location);
+                this.applyRadarLocation(location);
+                this.renderCityWeather(weather, location);
+            } else {
+                this.renderCityWeather(null, instantLocation);
+            }
         } catch (error) {
             if (requestId !== this.citySelectionRequestId) return;
-            this.renderCityWeather(null, { name: city });
+            this.renderCityWeather(null, instantLocation);
         }
     },
 
@@ -440,10 +471,10 @@ const RadarApp = {
             Number.isFinite(location.latitude) &&
             Number.isFinite(location.longitude)
         ) {
-            this.map.setView(
+            this.map.flyTo(
                 [location.latitude, location.longitude],
                 location.zoom || 11,
-                { animate: true }
+                { duration: 1.2 }
             );
 
             if (this.cityMarker) {
@@ -470,8 +501,6 @@ const RadarApp = {
 
         if (selectedCity) selectedCity.textContent = cityName;
         if (searchInput) searchInput.value = cityName;
-
-        this.setCityWeatherLoading(cityName);
     },
 
 

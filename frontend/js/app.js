@@ -145,7 +145,20 @@ const App = {
     // DROPDOWN CITY
     // ==============================
     if (citySelect) {
-        citySelect.value = this.selectedCity;
+        // If selectedCity is not in options, prepend it
+        const hasOption = Array.from(citySelect.options).some(
+            option => option.value.toLowerCase() === this.selectedCity.toLowerCase()
+        );
+        if (!hasOption && this.selectedCity) {
+            citySelect.prepend(new Option(this.selectedCity, this.selectedCity));
+        }
+
+        const match = Array.from(citySelect.options).find(
+            option => option.value.toLowerCase() === this.selectedCity.toLowerCase()
+        );
+        if (match) {
+            citySelect.value = match.value;
+        }
 
         citySelect.addEventListener('change', (e) => {
             const city = e.target.value.trim();
@@ -318,6 +331,9 @@ async searchCity() {
             if (matchingOption) {
                 citySelect.value =
                     matchingOption.value;
+            } else {
+                citySelect.prepend(new Option(detectedCity, detectedCity));
+                citySelect.value = detectedCity;
             }
         }
 
@@ -364,6 +380,19 @@ changeCity(city) {
         'wm_selected_city',
         city
     );
+
+    const citySelect = document.getElementById('global-city-select');
+    if (citySelect) {
+        const matchingOption = Array.from(citySelect.options).find(
+            option => option.value.toLowerCase() === city.toLowerCase()
+        );
+        if (matchingOption) {
+            citySelect.value = matchingOption.value;
+        } else {
+            citySelect.prepend(new Option(city, city));
+            citySelect.value = city;
+        }
+    }
 
     window.showToast(
         `Monitoring Region Switched: ${city}`,

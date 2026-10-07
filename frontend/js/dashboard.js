@@ -23,7 +23,14 @@ const Dashboard = {
 
     // Listen for city changes or live telemetry pulses
     window.addEventListener('wm:city_changed', (e) => {
-      this.loadData(e.detail.city);
+      const city = e.detail?.city || App.selectedCity;
+      // 1. Immediately pan/fly the map to the selected city!
+      this.recenterMiniMap(city);
+      // 2. Update location header
+      const locationEl = document.getElementById('dashboard-location-title');
+      if (locationEl) locationEl.textContent = city;
+      // 3. Load background telemetry
+      this.loadData(city);
     });
 
     window.addEventListener('wm:new_alert', (e) => {
@@ -60,6 +67,11 @@ const Dashboard = {
 
   async loadData(city = App.selectedCity) {
     try {
+      const locationEl = document.getElementById('dashboard-location-title');
+      if (locationEl) {
+        locationEl.textContent = city;
+      }
+
       const res = await API.get(`/api/dashboard?city=${encodeURIComponent(city)}`);
       if (res && res.success) {
         this.renderKPIs(res.kpis);
@@ -70,7 +82,7 @@ const Dashboard = {
 
         if (this.map && res.weather) {
           // Re-center map if city coordinates changed
-          this.recenterMiniMap(city);
+          this.recenterMiniMap(city, res.weather);
         }
       }
     } catch (err) {
@@ -168,11 +180,23 @@ const Dashboard = {
     const mapContainer = document.getElementById('mini-dashboard-map');
     if (!mapContainer || !window.L) return;
 
-    // Center on Chhatrapati Sambhajinagar
+    const initialCity = App.selectedCity || 'Chhatrapati Sambhajinagar';
+    const initialCoords = (window.getCityCoordinates ? window.getCityCoordinates(initialCity) : null) || [19.8762, 75.3433];
+
+    // Center on selected city
     this.map = L.map('mini-dashboard-map', {
       zoomControl: false,
       attributionControl: true
-    }).setView([19.8762, 75.3433], 11);
+    }).setView(initialCoords, 11);
+
+    this.currentCityMarker = L.circleMarker(initialCoords, {
+      radius: 8,
+      fillColor: '#00F5FF',
+      color: '#FFFFFF',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(this.map).bindPopup(`<b>${initialCity}</b>`);
 
     // Esri satellite imagery
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
@@ -212,16 +236,32 @@ const Dashboard = {
     }).addTo(this.map).bindPopup('<b>District Disaster Management HQ</b>');
   },
 
-  recenterMiniMap(city) {
-    const coordsMap = {
-      'Chhatrapati Sambhajinagar': [19.8762, 75.3433],
-      'Pune': [18.5204, 73.8567],
-      'Nashik': [19.9975, 73.7898],
-      'Nagpur': [21.1458, 79.0882]
-    };
-    const c = coordsMap[city] || coordsMap['Chhatrapati Sambhajinagar'];
-    if (this.map) {
-      this.map.setView(c, 11);
+  recenterMiniMap(city, weather = null) {
+    if (!this.map) return;
+    let lat, lon;
+
+    if (weather && Number.isFinite(Number(weather.latitude)) && Number.isFinite(Number(weather.longitude))) {
+      lat = Number(weather.latitude);
+      lon = Number(weather.longitude);
+    } else {
+      const coords = (window.getCityCoordinates ? window.getCityCoordinates(city) : null) || [19.8762, 75.3433];
+      lat = coords[0];
+      lon = coords[1];
+    }
+
+    this.map.flyTo([lat, lon], 11, { duration: 1.2 });
+
+    if (this.currentCityMarker) {
+      this.currentCityMarker.setLatLng([lat, lon]).bindPopup(`<b>${city}</b>`).openPopup();
+    } else {
+      this.currentCityMarker = L.circleMarker([lat, lon], {
+        radius: 8,
+        fillColor: '#00F5FF',
+        color: '#FFFFFF',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(this.map).bindPopup(`<b>${city}</b>`).openPopup();
     }
   },
 

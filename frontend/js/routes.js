@@ -24,6 +24,11 @@ const SafeRoutesApp = {
     window.addEventListener('wm:user_location', (event) => {
       this.loadCurrentLocation(event.detail);
     });
+    window.addEventListener('wm:city_changed', (event) => {
+      if (event.detail && event.detail.city) {
+        this.loadFloodCityByName(event.detail.city);
+      }
+    });
     await this.loadMapLayers();
     this.bindRouteCalculator();
     this.bindFloodCitySearch();
@@ -269,6 +274,18 @@ const SafeRoutesApp = {
   async loadFloodCityByName(city) {
     if (!city || !this.map) return;
 
+    // 1. Instantly move map using local coordinates (no API wait)
+    const coords = (window.getCityCoordinates ? window.getCityCoordinates(city) : null) || [19.8762, 75.3433];
+    const instantLocation = {
+      name: city,
+      state: '',
+      country: 'IN',
+      latitude: coords[0],
+      longitude: coords[1],
+      zoom: 11
+    };
+    this.applyFloodCity(instantLocation);
+
     const requestId = ++this.citySelectionRequestId;
     this.setFloodWeatherLoading(city);
 
@@ -279,19 +296,23 @@ const SafeRoutesApp = {
       if (requestId !== this.citySelectionRequestId) return;
 
       const weather = response.data;
-      const location = {
-        name: weather.city,
-        state: weather.state,
-        country: weather.country,
-        latitude: weather.latitude,
-        longitude: weather.longitude
-      };
-
-      this.applyFloodCity(location);
-      this.renderFloodCityWeather(weather, location);
+      if (weather) {
+        const location = {
+          name: weather.city || city,
+          state: weather.state || '',
+          country: weather.country || 'IN',
+          latitude: Number(weather.latitude) || coords[0],
+          longitude: Number(weather.longitude) || coords[1],
+          zoom: 11
+        };
+        this.applyFloodCity(location);
+        this.renderFloodCityWeather(weather, location);
+      } else {
+        this.renderFloodCityWeather(null, instantLocation);
+      }
     } catch (error) {
       if (requestId !== this.citySelectionRequestId) return;
-      this.renderFloodCityWeather(null, { name: city });
+      this.renderFloodCityWeather(null, instantLocation);
     }
   },
 
