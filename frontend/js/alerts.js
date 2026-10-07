@@ -82,6 +82,7 @@ const AlertsApp = {
           <td>
             <div style="font-weight: 600; color: #FFF;">${escapeHtml(a.title)}</div>
             <div style="font-size: 0.82rem; color: var(--text-muted);">${escapeHtml(a.location)}</div>
+            ${a.source ? `<div style="font-size: 0.72rem; color: #38bdf8; font-weight: 600; margin-top: 2px;">🛡️ ${escapeHtml(a.source)}</div>` : ''}
           </td>
           <td><span class="badge badge-cyan" style="font-size: 0.75rem;">${escapeHtml(a.type)}</span></td>
           <td><span class="badge ${badgeClass}">${escapeHtml(a.risk_level)}</span></td>

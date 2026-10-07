@@ -11,6 +11,7 @@ const errorHandler = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { optionalAuth } = require('./middleware/authMiddleware');
 const { registerClient } = require('./services/realtimeService');
+const { startEmergencyAlertEngine } = require('./services/emergencyAlertService');
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');
@@ -134,6 +135,9 @@ async function startServer() {
       logger.info(
         `📡 Real-Time SSE Stream active at: http://localhost:${config.PORT}/api/realtime/stream`
       );
+
+      // ── Start 24/7 Emergency Alert Engine ──
+      startEmergencyAlertEngine();
     });
   } catch (err) {
     logger.error('Failed to start server:', err);

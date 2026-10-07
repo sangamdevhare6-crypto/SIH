@@ -6,11 +6,120 @@ const NotificationManager = {
   notifications: [],
   unreadCount: 0,
   eventSource: null,
+  _pollTimer: null,
 
   init() {
+    this.registerServiceWorker();
+    this.requestNotificationPermission();
     this.fetchNotifications();
     this.setupSSE();
     this.bindDOM();
+    this.startPolling();   // fallback poll every 3 mins
+  },
+
+  // ── Register Service Worker ──
+  registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(reg => {
+        console.log('📡 [SW] Service Worker registered:', reg.scope);
+      })
+      .catch(err => {
+        console.warn('📡 [SW] Registration failed:', err.message);
+      });
+  },
+
+  // ── Play emergency audio chime on mobile / desktop ──
+  playAlertSound(riskLevel = 'High') {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = riskLevel === 'Very High' ? 'sawtooth' : 'sine';
+      osc.frequency.setValueAtTime(riskLevel === 'Very High' ? 880 : 587, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.35);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.36);
+    } catch (_) {}
+  },
+
+  // ── Ask browser notification permission ──
+  async requestNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          console.log('🔔 [NOTIF] Mobile & Desktop notifications enabled');
+        }
+      } catch (err) {
+        console.warn('Notification permission error:', err);
+      }
+    }
+  },
+
+  // ── Show OS-level notification (Mobile Android + Desktop) ──
+  async showBrowserNotification(title, body, url = '/alerts.html', riskLevel = 'High') {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    // 1. Play alert sound chime
+    this.playAlertSound(riskLevel);
+
+    // 2. Mobile hardware vibration
+    if (navigator.vibrate) {
+      try {
+        navigator.vibrate(riskLevel === 'Very High' ? [350, 120, 350, 120, 500] : [250, 100, 250]);
+      } catch (_) {}
+    }
+
+    const options = {
+      body: body || 'New emergency notification',
+      icon: '/assets/avatars/officer.png',
+      badge: '/assets/avatars/officer.png',
+      tag: 'wm-' + Date.now(),
+      renotify: true,
+      requireInteraction: riskLevel === 'Very High',
+      vibrate: riskLevel === 'Very High' ? [350, 120, 350, 120, 500] : [250, 100, 250],
+      data: { url, risk_level: riskLevel }
+    };
+
+    // 3. Android Mobile standard: ServiceWorker showNotification
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && reg.showNotification) {
+          await reg.showNotification(title, options);
+          return;
+        }
+      } catch (err) {
+        console.warn('ServiceWorker showNotification fallback:', err);
+      }
+    }
+
+    // 4. Desktop window Notification fallback
+    try {
+      const notif = new Notification(title, options);
+      notif.addEventListener('click', () => {
+        window.focus();
+        window.location.href = url;
+        notif.close();
+      });
+    } catch (err) {
+      console.warn('Desktop Notification error:', err);
+    }
+  },
+
+  // ── Polling fallback (every 3 minutes) ──
+  startPolling() {
+    this._pollTimer = setInterval(() => {
+      this.fetchNotifications();
+    }, 3 * 60 * 1000);
   },
 
   async fetchNotifications() {
@@ -41,9 +150,15 @@ const NotificationManager = {
         try {
           const payload = JSON.parse(e.data);
           const alert = payload.data || payload;
-          window.showToast(`EMERGENCY ALERT: ${alert.title}`, 'danger');
+          window.showToast(`🚨 ALERT: ${alert.title}`, 'danger');
           this.fetchNotifications();
-          // Dispatch custom event for active pages (e.g., dashboard, alerts, radar)
+          // Browser OS notification
+          this.showBrowserNotification(
+            `🚨 ${alert.risk_level || 'Emergency'} Alert`,
+            alert.title,
+            alert.link || '/alerts.html',
+            alert.risk_level
+          );
           window.dispatchEvent(new CustomEvent('wm:new_alert', { detail: alert }));
         } catch (err) {}
       });
@@ -54,6 +169,15 @@ const NotificationManager = {
           const notif = payload.data || payload;
           window.showToast(notif.title, 'info');
           this.fetchNotifications();
+          // Browser OS notification for high/very-high
+          if (notif.risk_level === 'Very High' || notif.risk_level === 'High') {
+            this.showBrowserNotification(
+              `🔔 ${notif.title}`,
+              notif.message || '',
+              notif.link || '/alerts.html',
+              notif.risk_level
+            );
+          }
         } catch (err) {}
       });
 
@@ -160,6 +284,7 @@ const NotificationManager = {
             </div>
             <div class="notif-title">${escapeHtml(n.title)}</div>
             <div class="notif-msg">${escapeHtml(n.message)}</div>
+            ${n.source ? `<div style="font-size: 0.68rem; color: #38bdf8; margin-top: 4px; font-weight: 600; display: flex; align-items: center; gap: 4px;">🛡️ Verified Source: ${escapeHtml(n.source)}</div>` : ''}
           </div>
         </div>
       `;

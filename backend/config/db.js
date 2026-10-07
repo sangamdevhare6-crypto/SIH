@@ -55,78 +55,7 @@ const memoryStore = {
       jurisdiction: 'Chhatrapati Sambhajinagar & Marathwada'
     }
   ],
-  alerts: [
-    {
-      id: 'f0000000-0000-0000-0000-000000000001',
-      title: 'Flash Flood Red Warning - Kham River Catchment',
-      type: 'Flash Flood',
-      risk_level: 'Very High',
-      location: 'Kham River Basin, Chhatrapati Sambhajinagar',
-      latitude: 19.876165,
-      longitude: 75.343314,
-      description: 'Rapid water level rise due to 120mm cloudburst in catchment area. Low-lying areas in Begumpura and Cidco Sector 3 are at immediate risk of inundation.',
-      affected_population: '~45,000 citizens',
-      status: 'Active',
-      created_by: 'a0000000-0000-0000-0000-000000000001',
-      created_at: new Date(Date.now() - 15 * 60 * 1000)
-    },
-    {
-      id: 'f0000000-0000-0000-0000-000000000002',
-      title: 'Extreme Precipitation Downpour Alert',
-      type: 'Heavy Rainfall',
-      risk_level: 'High',
-      location: 'Marathwada Central Zone & Paithan Belt',
-      latitude: 19.479532,
-      longitude: 75.385551,
-      description: 'Continuous heavy rainfall expected for next 18 hours. Wind gusts up to 45 km/h. Saturated soil conditions increase run-off danger.',
-      affected_population: '~120,000 citizens',
-      status: 'Active',
-      created_by: 'a0000000-0000-0000-0000-000000000001',
-      created_at: new Date(Date.now() - 45 * 60 * 1000)
-    },
-    {
-      id: 'f0000000-0000-0000-0000-000000000003',
-      title: 'Godavari River Basin Surge Level 2',
-      type: 'River Level',
-      risk_level: 'High',
-      location: 'Godavari River Corridor, Paithan & Gangapur',
-      latitude: 19.531234,
-      longitude: 75.228945,
-      description: 'Upstream discharge from Darna and Gangapur dams has raised Godavari water level by 3.8 meters above danger threshold.',
-      affected_population: '~60,000 citizens',
-      status: 'Active',
-      created_by: 'a0000000-0000-0000-0000-000000000001',
-      created_at: new Date(Date.now() - 90 * 60 * 1000)
-    },
-    {
-      id: 'f0000000-0000-0000-0000-000000000004',
-      title: 'Landslide Warning - Daulatabad Ghat Sector',
-      type: 'Landslide',
-      risk_level: 'Moderate',
-      location: 'Daulatabad - Khuldabad Hill Section',
-      latitude: 20.005882,
-      longitude: 75.210419,
-      description: 'Steep slopes destabilized due to prolonged saturation. Heavy vehicular movement prohibited on Ghat road.',
-      affected_population: '~8,500 commuters',
-      status: 'Monitoring',
-      created_by: 'a0000000-0000-0000-0000-000000000001',
-      created_at: new Date(Date.now() - 180 * 60 * 1000)
-    },
-    {
-      id: 'f0000000-0000-0000-0000-000000000005',
-      title: 'Severe Lightning & Thunderstorm Warning',
-      type: 'Weather Alert',
-      risk_level: 'Moderate',
-      location: 'Aurangabad Industrial Belt & Waluj MIDC',
-      latitude: 19.832941,
-      longitude: 75.241089,
-      description: 'Intense convective cell detected on Doppler radar moving east at 22 km/h. High frequency cloud-to-ground lightning.',
-      affected_population: '~35,000 workers',
-      status: 'Active',
-      created_by: 'a0000000-0000-0000-0000-000000000001',
-      created_at: new Date(Date.now() - 240 * 60 * 1000)
-    }
-  ],
+  alerts: [],
   citizen_reports: [
     {
       id: '20000000-0000-0000-0000-000000000001',
@@ -447,56 +376,7 @@ const memoryStore = {
       sevenDay: []
     }
   },
-  notifications: [
-    {
-      id: '30000000-0000-0000-0000-000000000001',
-      user_id: null,
-      role_target: 'ALL',
-      type: 'Flood warning',
-      title: 'RED ALERT: Kham River Basin Inundation Danger',
-      message: 'Immediate evacuation advisory issued for low-lying sectors near Begumpura & Cidco N-3. Evacuate to designated Community Shelter #2.',
-      risk_level: 'Very High',
-      is_read: false,
-      link: '/flood-map.html',
-      created_at: new Date(Date.now() - 10 * 60 * 1000)
-    },
-    {
-      id: '30000000-0000-0000-0000-000000000002',
-      user_id: null,
-      role_target: 'ALL',
-      type: 'Heavy rainfall',
-      title: 'Meteorological Dept: 120mm Rainfall Measured in Last 3 Hours',
-      message: 'Severe monsoon trough active across Marathwada. Avoid non-essential road travel.',
-      risk_level: 'High',
-      is_read: false,
-      link: '/weather-data.html',
-      created_at: new Date(Date.now() - 35 * 60 * 1000)
-    },
-    {
-      id: '30000000-0000-0000-0000-000000000003',
-      user_id: null,
-      role_target: 'AUTHORITY',
-      type: 'Infrastructure risk',
-      title: 'Jayakwadi Dam Exceeds 96.4% Storage Capacity',
-      message: 'Emergency flood gates 1 through 14 opened to discharge 48,500 cusecs into Godavari river.',
-      risk_level: 'High',
-      is_read: false,
-      link: '/infrastructure-details.html?id=10000000-0000-0000-0000-000000000001',
-      created_at: new Date(Date.now() - 65 * 60 * 1000)
-    },
-    {
-      id: '30000000-0000-0000-0000-000000000004',
-      user_id: 'c0000000-0000-0000-0000-000000000001',
-      role_target: 'CITIZEN',
-      type: 'Citizen report update',
-      title: 'Your Report #CR-2001 (Begumpura Main Chawk) has been updated',
-      message: 'Status changed to: In Progress. NDRF Unit 4 has arrived at the location.',
-      risk_level: 'High',
-      is_read: false,
-      link: '/citizen-reports.html',
-      created_at: new Date(Date.now() - 95 * 60 * 1000)
-    }
-  ],
+  notifications: [],
   safe_routes: [
     {
       id: '40000000-0000-0000-0000-000000000001',

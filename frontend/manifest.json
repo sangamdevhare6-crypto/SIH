@@ -1,0 +1,24 @@
+{
+  "name": "World Monitor - Disaster Command Center",
+  "short_name": "WorldMonitor",
+  "description": "Real-time disaster monitoring, emergency alerts, radar, and safe route navigation.",
+  "start_url": "/dashboard.html",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/avatars/officer.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/avatars/officer.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
