@@ -565,58 +565,331 @@ const SafeRoutesApp = {
     }).join('');
   },
 
+  /* ── Route Calculator: search, GPS, map drawing ── */
+
   bindRouteCalculator() {
-    const form = document.getElementById('find-safe-route-form');
-    const resultBox = document.getElementById('route-calculation-result');
+    const form        = document.getElementById('find-safe-route-form');
+    const resultBox   = document.getElementById('route-calculation-result');
+    const originInput = document.getElementById('route-origin');
+    const destInput   = document.getElementById('route-destination');
+    const gpsBtn      = document.getElementById('use-my-location-btn');
+    const originSugg  = document.getElementById('origin-suggestions');
+    const destSugg    = document.getElementById('destination-suggestions');
 
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const origin = document.getElementById('route-origin').value;
-        const destination = document.getElementById('route-destination').value;
+    // Store selected lat/lon for map drawing even if backend has no polyline
+    this._originCoords = null;
+    this._destCoords   = null;
 
-        try {
-          window.showToast('Calculating hazard-free elevation path...', 'info');
-          const res = await API.post('/api/routes/find', { origin, destination });
+    if (!form) return;
 
-          if (res && res.success && res.route) {
-            const rt = res.route;
-            if (resultBox) {
-              resultBox.style.display = 'block';
-              resultBox.innerHTML = `
-                <div class="hud-panel neon-border-pulsing" style="margin-top: 16px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <span style="font-family: var(--font-orbitron); font-weight: 700; color: var(--green-neon);">OPTIMAL ROUTE SECURED</span>
-                    <span class="badge badge-success"><i data-lucide="shield-check"></i> ${rt.safe_status}</span>
-                  </div>
-                  <p style="font-size: 0.95rem; color: #FFF; margin-bottom: 8px;"><b>${rt.name}</b></p>
-                  <p style="font-size: 0.85rem; color: var(--cyan-bright);">Distance: ${rt.distance_km} km • ETA: ${rt.estimated_time_mins} mins</p>
-                  <div style="margin-top: 10px; font-size: 0.82rem; color: var(--text-secondary);">
-                    <b>Active Hazards Avoided:</b>
-                    <ul style="padding-left: 18px; margin-top: 4px;">
-                      ${rt.avoidedRisks.map(a => `<li>${a}</li>`).join('')}
-                    </ul>
-                  </div>
-                </div>
-              `;
-              if (window.lucide) window.lucide.createIcons();
-            }
-
-            // Draw calculated route on map
-            if (this.routeLayer && rt.polyline) {
-              const poly = L.polyline(rt.polyline, {
-                color: '#00FFA3',
-                weight: 6,
-                opacity: 1
-              }).addTo(this.routeLayer);
-              this.map.fitBounds(poly.getBounds(), { padding: [40, 40] });
-            }
-          }
-        } catch (err) {
-          window.showToast(err.message, 'danger');
-        }
+    // ── Autocomplete for Departure field ──
+    if (originInput && originSugg) {
+      this._bindLocationSearch(originInput, originSugg, (loc) => {
+        this._originCoords = [loc.lat, loc.lon];
       });
     }
+
+    // ── Autocomplete for Destination field ──
+    if (destInput && destSugg) {
+      this._bindLocationSearch(destInput, destSugg, (loc) => {
+        this._destCoords = [loc.lat, loc.lon];
+      });
+    }
+
+    // ── GPS "My Location" Button ──
+    if (gpsBtn && originInput) {
+      gpsBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          window.showToast('Geolocation not supported by your browser', 'danger');
+          return;
+        }
+        gpsBtn.classList.add('gps-loading');
+        gpsBtn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;"></i> Locating…';
+        if (window.lucide) window.lucide.createIcons();
+
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            this._originCoords = [latitude, longitude];
+
+            // Reverse-geocode with Nominatim
+            try {
+              const resp = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+                { headers: { 'Accept-Language': 'en' } }
+              );
+              const data = await resp.json();
+              const label = data.display_name
+                ? data.display_name.split(',').slice(0, 3).join(', ')
+                : `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+              originInput.value = label;
+            } catch {
+              originInput.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+            }
+
+            // Pan map to current location
+            if (this.map) {
+              this.map.setView([latitude, longitude], 14, { animate: true });
+              if (this.cityMarker) this.map.removeLayer(this.cityMarker);
+              this.cityMarker = L.circleMarker([latitude, longitude], {
+                radius: 8, color: '#fff', weight: 2,
+                fillColor: '#00d9ff', fillOpacity: 1
+              }).addTo(this.map).bindPopup('📍 Your Current Location').openPopup();
+            }
+
+            gpsBtn.classList.remove('gps-loading');
+            gpsBtn.innerHTML = '<i data-lucide="locate" style="width:14px;height:14px;"></i> My Location';
+            if (window.lucide) window.lucide.createIcons();
+            window.showToast('Current location detected!', 'success');
+          },
+          (err) => {
+            gpsBtn.classList.remove('gps-loading');
+            gpsBtn.innerHTML = '<i data-lucide="locate" style="width:14px;height:14px;"></i> My Location';
+            if (window.lucide) window.lucide.createIcons();
+            window.showToast('Unable to get location: ' + err.message, 'danger');
+          },
+          { enableHighAccuracy: true, timeout: 12000 }
+        );
+      });
+    }
+
+    // ── Form Submit ──
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const origin      = originInput ? originInput.value.trim() : '';
+      const destination = destInput   ? destInput.value.trim()   : '';
+
+      if (!origin || !destination) {
+        window.showToast('Please fill both departure and destination fields', 'danger');
+        return;
+      }
+
+      // Need lat/lon for real routing — geocode if not yet selected from dropdown
+      let oc = this._originCoords;
+      let dc = this._destCoords;
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Calculating…'; }
+
+      try {
+        window.showToast('Fetching real road route…', 'info');
+
+        // Geocode if coords missing (user typed manually without picking suggestion)
+        if (!oc) oc = await this._geocodeText(origin);
+        if (!dc) dc = await this._geocodeText(destination);
+
+        if (!oc || !dc) {
+          window.showToast('Could not locate one of the addresses. Pick from suggestions.', 'danger');
+          return;
+        }
+
+        // ── OSRM real road routing (free, no API key) ──
+        const osrmUrl =
+          `https://router.project-osrm.org/route/v1/driving/` +
+          `${oc[1]},${oc[0]};${dc[1]},${dc[0]}` +
+          `?overview=full&geometries=geojson&steps=false`;
+
+        const osrmResp = await fetch(osrmUrl);
+        const osrmData = await osrmResp.json();
+
+        if (osrmData.code !== 'Ok' || !osrmData.routes || !osrmData.routes.length) {
+          window.showToast('No drivable road route found between these points.', 'danger');
+          return;
+        }
+
+        const osrmRoute    = osrmData.routes[0];
+        const distanceKm   = (osrmRoute.distance / 1000).toFixed(1);
+        const durationMins = Math.round(osrmRoute.duration / 60);
+        // Convert GeoJSON [lon,lat] → Leaflet [lat,lon]
+        const latlngs = osrmRoute.geometry.coordinates.map(c => [c[1], c[0]]);
+
+        // ── Draw route on map ──
+        if (this.routeLayer) {
+          this.routeLayer.clearLayers();   // clear preset routes while showing custom one
+        }
+
+        const routePoly = L.polyline(latlngs, {
+          color: '#00FFA3',
+          weight: 6,
+          opacity: 0.95,
+          lineJoin: 'round'
+        }).addTo(this.routeLayer);
+        this.map.fitBounds(routePoly.getBounds(), { padding: [50, 50], animate: true });
+
+        // Origin marker
+        L.marker(oc, {
+          icon: L.divIcon({
+            className: '',
+            html: `<div style="background:#00d9ff;color:#000;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px;border:2px solid #fff;box-shadow:0 0 10px #00d9ff;">📍</div>`,
+            iconSize: [30, 30], iconAnchor: [15, 15]
+          })
+        }).addTo(this.routeLayer).bindPopup(`<b>Departure</b><br>${origin}`);
+
+        // Destination marker
+        L.marker(dc, {
+          icon: L.divIcon({
+            className: '',
+            html: `<div style="background:#00FFA3;color:#000;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px;border:2px solid #fff;box-shadow:0 0 10px #00FFA3;">🏠</div>`,
+            iconSize: [30, 30], iconAnchor: [15, 15]
+          })
+        }).addTo(this.routeLayer).bindPopup(`<b>Destination</b><br>${destination}`);
+
+        // ── Result box ──
+        // Also try backend for hazard info (non-critical, ignore failure)
+        let hazardInfo = [];
+        try {
+          const backendRes = await API.post('/api/routes/find', { origin, destination });
+          if (backendRes?.success && backendRes?.route?.avoidedRisks) {
+            hazardInfo = backendRes.route.avoidedRisks;
+          }
+        } catch { /* ignore backend errors */ }
+
+        if (resultBox) {
+          resultBox.style.display = 'block';
+          resultBox.innerHTML = `
+            <div class="hud-panel neon-border-pulsing" style="margin-top: 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-family:var(--font-orbitron);font-weight:700;color:var(--green-neon);font-size:0.9rem;">ROUTE SECURED</span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <span class="badge badge-success" style="font-size:0.75rem;"><i data-lucide="shield-check" style="width:12px;height:12px;"></i> Safe</span>
+                  <button id="clear-route-btn" type="button" style="padding:3px 10px;background:rgba(255,51,102,0.15);border:1px solid rgba(255,51,102,0.4);color:#ff3366;border-radius:5px;font-size:0.75rem;cursor:pointer;font-family:var(--font-rajdhani);font-weight:600;">✕ Clear</button>
+                </div>
+              </div>
+              <p style="font-size:0.88rem;color:#FFF;margin-bottom:6px;">
+                <b>📍 ${origin}</b><br>
+                <span style="color:var(--text-secondary);font-size:0.8rem;">↓ via road</span><br>
+                <b>🏠 ${destination}</b>
+              </p>
+              <div style="display:flex;gap:16px;margin:10px 0;padding:8px 12px;background:rgba(0,255,163,0.08);border-radius:6px;border:1px solid rgba(0,255,163,0.2);">
+                <div style="text-align:center;">
+                  <div style="font-size:1.2rem;font-weight:700;color:var(--green-neon);font-family:var(--font-orbitron);">${distanceKm}</div>
+                  <div style="font-size:0.72rem;color:var(--text-secondary);">KM</div>
+                </div>
+                <div style="width:1px;background:rgba(255,255,255,0.1);"></div>
+                <div style="text-align:center;">
+                  <div style="font-size:1.2rem;font-weight:700;color:var(--cyan-bright);font-family:var(--font-orbitron);">${durationMins}</div>
+                  <div style="font-size:0.72rem;color:var(--text-secondary);">MINS</div>
+                </div>
+                <div style="width:1px;background:rgba(255,255,255,0.1);"></div>
+                <div style="text-align:center;">
+                  <div style="font-size:1.2rem;font-weight:700;color:#a78bfa;font-family:var(--font-orbitron);">🚗</div>
+                  <div style="font-size:0.72rem;color:var(--text-secondary);">BY ROAD</div>
+                </div>
+              </div>
+              ${hazardInfo.length ? `
+              <div style="margin-top:8px;font-size:0.82rem;color:var(--text-secondary);">
+                <b style="color:#FFF;">⚠ Hazards Avoided:</b>
+                <ul style="padding-left:18px;margin-top:4px;">
+                  ${hazardInfo.map(a => `<li>${a}</li>`).join('')}
+                </ul>
+              </div>` : ''}
+            </div>
+          `;
+          if (window.lucide) window.lucide.createIcons();
+
+          // Clear button
+          document.getElementById('clear-route-btn')?.addEventListener('click', () => {
+            if (this.routeLayer) this.routeLayer.clearLayers();
+            resultBox.style.display = 'none';
+            resultBox.innerHTML = '';
+            // Reload preset routes
+            this.loadMapLayers();
+          });
+        }
+
+        window.showToast(`Route found: ${distanceKm} km · ${durationMins} mins`, 'success');
+
+      } catch (err) {
+        console.error(err);
+        window.showToast('Route calculation failed: ' + (err.message || 'Unknown error'), 'danger');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i data-lucide="route"></i> Compute Elevation Safe Route';
+          if (window.lucide) window.lucide.createIcons();
+        }
+      }
+    });
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#origin-wrap'))      originSugg && (originSugg.hidden = true);
+      if (!e.target.closest('#destination-wrap')) destSugg   && (destSugg.hidden   = true);
+    });
+  },
+
+  /* ── Location Autocomplete Helper ── */
+  _bindLocationSearch(input, dropdown, onSelect) {
+    let timer = null;
+
+    const search = async (query) => {
+      if (query.length < 2) { dropdown.hidden = true; return; }
+
+      dropdown.hidden = false;
+      dropdown.innerHTML = `<div class="route-search-msg">Searching…</div>`;
+
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=6&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const results = await resp.json();
+
+        if (!results.length) {
+          dropdown.innerHTML = `<div class="route-search-msg">No results found</div>`;
+          return;
+        }
+
+        dropdown.replaceChildren();
+        results.forEach((loc) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'route-suggestion-item';
+          const label = loc.display_name.split(',').slice(0, 4).join(', ');
+          btn.textContent = label;
+          btn.addEventListener('click', () => {
+            input.value = label;
+            dropdown.hidden = true;
+            if (this.map) {
+              this.map.setView([parseFloat(loc.lat), parseFloat(loc.lon)], 14, { animate: true });
+            }
+            onSelect({ lat: parseFloat(loc.lat), lon: parseFloat(loc.lon), label });
+          });
+          dropdown.append(btn);
+        });
+      } catch {
+        dropdown.innerHTML = `<div class="route-search-msg">Search failed. Try again.</div>`;
+      }
+    };
+
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => search(input.value.trim()), 350);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') dropdown.hidden = true;
+      if (e.key === 'Enter') {
+        const first = dropdown.querySelector('.route-suggestion-item');
+        if (first && !dropdown.hidden) { e.preventDefault(); first.click(); }
+      }
+    });
+  },
+
+  /* ── Geocode a free-text address → [lat, lon] or null ── */
+  async _geocodeText(text) {
+    if (!text) return null;
+    try {
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&limit=1`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await resp.json();
+      if (data && data.length > 0) {
+        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      }
+    } catch { /* ignore */ }
+    return null;
   }
 };
 

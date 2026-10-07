@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -698,24 +698,85 @@
               </div>
             </div>
 
+            <!-- Route Finder Inline Styles -->
+            <style>
+              .route-search-wrap { position: relative; }
+              .route-search-input-row { display: flex; gap: 6px; align-items: center; }
+              .route-search-input-row input { flex: 1; }
+              .btn-gps {
+                display: flex; align-items: center; gap: 5px;
+                padding: 8px 11px;
+                background: rgba(0,217,255,0.1);
+                border: 1px solid rgba(0,217,255,0.4);
+                color: #00d9ff;
+                border-radius: 6px;
+                font-size: 0.78rem;
+                font-family: var(--font-rajdhani, sans-serif);
+                font-weight: 600; cursor: pointer;
+                white-space: nowrap; flex-shrink: 0;
+                transition: background 0.2s, border-color 0.2s;
+              }
+              .btn-gps:hover { background: rgba(0,217,255,0.2); border-color: rgba(0,217,255,0.7); }
+              .btn-gps.gps-loading { opacity: 0.6; pointer-events: none; }
+              .route-suggestions {
+                position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+                z-index: 9999; background: #12172a;
+                border: 1px solid rgba(0,217,255,0.35);
+                border-radius: 0 0 6px 6px;
+                max-height: 180px; overflow-y: auto;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+              }
+              .route-suggestion-item {
+                display: block; width: 100%; text-align: left;
+                background: transparent; border: none;
+                border-bottom: 1px solid rgba(255,255,255,0.06);
+                padding: 9px 12px; color: #e2e8f0;
+                font-size: 0.83rem; cursor: pointer;
+                transition: background 0.15s;
+              }
+              .route-suggestion-item:hover, .route-suggestion-item:focus {
+                background: rgba(0,217,255,0.1); outline: none;
+              }
+              .route-suggestion-item:last-child { border-bottom: none; }
+              .route-search-msg { padding: 10px 12px; font-size: 0.8rem; color: #94a3b8; }
+            </style>
+
             <form id="find-safe-route-form">
+              <!-- Departure Point -->
               <div class="form-group">
                 <label class="form-label">Current Location / Departure Point *</label>
-                <select id="route-origin" class="form-select" required>
-                  <option value="Begumpura Chawk">Begumpura Chawk (Active Flood Zone)</option>
-                  <option value="Old Bazar Market">Old Bazar Market</option>
-                  <option value="Kranti Chawk">Kranti Chawk</option>
-                  <option value="Cidco N-4 Sector">Cidco N-4 Sector</option>
-                </select>
+                <div class="route-search-wrap" id="origin-wrap">
+                  <div class="route-search-input-row">
+                    <input
+                      type="text"
+                      id="route-origin"
+                      class="form-input"
+                      placeholder="Search departure location..."
+                      autocomplete="off"
+                      required
+                    />
+                    <button type="button" class="btn-gps" id="use-my-location-btn" title="Use my current GPS location">
+                      <i data-lucide="locate" style="width:14px;height:14px;"></i> My Location
+                    </button>
+                  </div>
+                  <div class="route-suggestions" id="origin-suggestions" hidden></div>
+                </div>
               </div>
 
+              <!-- Destination -->
               <div class="form-group">
                 <label class="form-label">Destination Safe Shelter *</label>
-                <select id="route-destination" class="form-select" required>
-                  <option value="Divisional Sports Complex Shelter, Garkheda">Divisional Sports Complex Shelter, Garkheda (Open)</option>
-                  <option value="Cidco Community Hall Safe Hub">Cidco Community Hall Safe Hub (Open)</option>
-                  <option value="University Auditorium Safe Haven">University Auditorium Safe Haven (Open)</option>
-                </select>
+                <div class="route-search-wrap" id="destination-wrap">
+                  <input
+                    type="text"
+                    id="route-destination"
+                    class="form-input"
+                    placeholder="Search destination or shelter..."
+                    autocomplete="off"
+                    required
+                  />
+                  <div class="route-suggestions" id="destination-suggestions" hidden></div>
+                </div>
               </div>
 
               <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">
