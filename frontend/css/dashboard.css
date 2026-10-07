@@ -285,6 +285,11 @@
   background: #001B33;
   color: #FFFFFF;
 }
+.city-select option[value="CURRENT_LOCATION"] {
+  background: #002244;
+  color: #00F5FF;
+  font-weight: 700;
+}
 
 .map-location-btn {
   display: grid;

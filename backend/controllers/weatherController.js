@@ -106,8 +106,18 @@ async function getNowcast(req, res, next) {
       });
     }
 
+    const hasLatitude = req.query.lat !== undefined;
+    const hasLongitude = req.query.lon !== undefined;
+
+    const coordinates = (hasLatitude && hasLongitude) ? {
+      latitude: Number(req.query.lat),
+      longitude: Number(req.query.lon),
+      state: String(req.query.state || ''),
+      country: String(req.query.country || '')
+    } : null;
+
     const weather =
-      await getLiveWeather(city);
+      await getLiveWeather(city, coordinates);
 
     /*
      * Next available OpenWeather forecast periods.

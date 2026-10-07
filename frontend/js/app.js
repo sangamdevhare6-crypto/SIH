@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const App = {
   selectedCity: localStorage.getItem('wm_selected_city') || 'Chhatrapati Sambhajinagar',
+  selectedCoordinates: (() => {
+    try {
+      return JSON.parse(localStorage.getItem('wm_selected_coordinates') || 'null');
+    } catch (_) {
+      return null;
+    }
+  })(),
 
   init() {
     this.setupMovingBoxes();
@@ -136,7 +143,7 @@ const App = {
     setInterval(update, 1000);
   },
 
- setupLocationSelector() {
+  setupLocationSelector() {
     const citySelect = document.getElementById('global-city-select');
     const searchInput = document.getElementById('city-search-input');
     const searchBtn = document.getElementById('city-search-btn');
@@ -145,52 +152,225 @@ const App = {
     // DROPDOWN CITY
     // ==============================
     if (citySelect) {
-        // If selectedCity is not in options, prepend it
-        const hasOption = Array.from(citySelect.options).some(
-            option => option.value.toLowerCase() === this.selectedCity.toLowerCase()
-        );
-        if (!hasOption && this.selectedCity) {
-            citySelect.prepend(new Option(this.selectedCity, this.selectedCity));
+      // Ensure "Select your current location" option exists at the very top
+      let currentLocOpt = Array.from(citySelect.options).find(
+        option => option.value === 'CURRENT_LOCATION'
+      );
+      if (!currentLocOpt) {
+        currentLocOpt = document.createElement('option');
+        currentLocOpt.value = 'CURRENT_LOCATION';
+        currentLocOpt.textContent = '📍 Select your current location';
+        currentLocOpt.style.fontWeight = 'bold';
+        currentLocOpt.style.color = '#00F5FF';
+        citySelect.insertBefore(currentLocOpt, citySelect.firstChild);
+      }
+
+      // If selectedCity is not in options, prepend after CURRENT_LOCATION
+      const hasOption = Array.from(citySelect.options).some(
+        option => option.value && option.value !== 'CURRENT_LOCATION' && option.value.toLowerCase() === (this.selectedCity || '').toLowerCase()
+      );
+      if (!hasOption && this.selectedCity && this.selectedCity !== 'CURRENT_LOCATION') {
+        const newOpt = new Option(this.selectedCity, this.selectedCity);
+        if (currentLocOpt.nextSibling) {
+          citySelect.insertBefore(newOpt, currentLocOpt.nextSibling);
+        } else {
+          citySelect.appendChild(newOpt);
+        }
+      }
+
+      this.syncCitySelect();
+
+      citySelect.addEventListener('change', (e) => {
+        const value = e.target.value.trim();
+
+        if (!value) return;
+
+        if (value === 'CURRENT_LOCATION') {
+          this.detectAndApplyCurrentLocation();
+          return;
         }
 
-        const match = Array.from(citySelect.options).find(
-            option => option.value.toLowerCase() === this.selectedCity.toLowerCase()
-        );
-        if (match) {
-            citySelect.value = match.value;
+        this.changeCity(value);
+
+        // Search box update karo
+        if (searchInput) {
+          searchInput.value = '';
         }
-
-        citySelect.addEventListener('change', (e) => {
-            const city = e.target.value.trim();
-
-            if (!city) return;
-
-            this.changeCity(city);
-
-            // Search box bhi update karo
-            if (searchInput) {
-                searchInput.value = '';
-            }
-        });
+      });
     }
 
     // ==============================
     // SEARCH BUTTON
     // ==============================
     if (searchBtn && searchInput) {
-        searchBtn.addEventListener('click', () => {
-            this.searchCity();
-        });
+      searchBtn.addEventListener('click', () => {
+        this.searchCity();
+      });
 
-        // ENTER PRESS
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.searchCity();
-            }
-        });
+      // ENTER PRESS
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.searchCity();
+        }
+      });
     }
-},
+  },
+
+  syncCitySelect() {
+    const citySelect = document.getElementById('global-city-select');
+    if (!citySelect) return;
+
+    const match = Array.from(citySelect.options).find(
+      option => option.value && option.value !== 'CURRENT_LOCATION' && option.value.toLowerCase() === (this.selectedCity || '').toLowerCase()
+    );
+    if (match) {
+      citySelect.value = match.value;
+    }
+  },
+
+  detectAndApplyCurrentLocation() {
+    const citySelect = document.getElementById('global-city-select');
+
+    if (!navigator.geolocation) {
+      if (window.showToast) {
+        window.showToast('Geolocation is not supported by this browser.', 'danger');
+      }
+      this.syncCitySelect();
+      return;
+    }
+
+    if (window.showToast) {
+      window.showToast('Detecting your current location...', 'info');
+    }
+
+    const currentLocOpt = citySelect
+      ? Array.from(citySelect.options).find(opt => opt.value === 'CURRENT_LOCATION')
+      : null;
+    if (currentLocOpt) {
+      currentLocOpt.textContent = '⌛ Detecting location...';
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const coords = { latitude: lat, longitude: lon, accuracy: position.coords.accuracy };
+
+        if (currentLocOpt) {
+          currentLocOpt.textContent = '📍 Select your current location';
+        }
+
+        // Broadcast raw coordinates to live radar & maps
+        window.dispatchEvent(
+          new CustomEvent('wm:user_location', { detail: coords })
+        );
+
+        // Resolve city name from coordinates
+        let detectedCity = await this.reverseGeocodeCity(lat, lon);
+        if (!detectedCity) {
+          detectedCity = this.findNearestCity(lat, lon);
+        }
+
+        if (detectedCity) {
+          this.changeCity(detectedCity, coords);
+          if (window.showToast) {
+            window.showToast(`Current Location Detected: ${detectedCity}`, 'success');
+          }
+        } else {
+          this.changeCity('Current Location', coords);
+          if (window.showToast) {
+            window.showToast('Using your current GPS coordinates', 'success');
+          }
+        }
+      },
+      (error) => {
+        if (currentLocOpt) {
+          currentLocOpt.textContent = '📍 Select your current location';
+        }
+
+        let message = 'Unable to access your location.';
+        if (error.code === error.PERMISSION_DENIED) {
+          message = 'Location permission denied. Please allow location access in your browser.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          message = 'Location information is unavailable. Please check GPS settings.';
+        } else if (error.code === error.TIMEOUT) {
+          message = 'Location request timed out. Please try again.';
+        }
+
+        if (window.showToast) {
+          window.showToast(message, 'danger');
+        }
+
+        this.syncCitySelect();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  },
+
+  async reverseGeocodeCity(lat, lon) {
+    try {
+      const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+      if (res.ok) {
+        const data = await res.json();
+        const candidate = data.city || data.locality || data.principalSubdivision;
+        if (candidate && candidate.trim()) {
+          const cleaned = candidate.trim();
+          const citySelect = document.getElementById('global-city-select');
+          if (citySelect) {
+            const match = Array.from(citySelect.options).find(
+              opt => opt.value && opt.value.toLowerCase() === cleaned.toLowerCase()
+            );
+            if (match) return match.value;
+          }
+          return cleaned;
+        }
+      }
+    } catch (_) {}
+    return null;
+  },
+
+  findNearestCity(lat, lon) {
+    const coordsMap = window.CITY_COORDINATES;
+    if (!coordsMap || typeof coordsMap !== 'object') return null;
+
+    let nearestCity = null;
+    let minDistance = Infinity;
+
+    for (const [cityName, coords] of Object.entries(coordsMap)) {
+      if (!Array.isArray(coords) || coords.length < 2) continue;
+      const [cLat, cLon] = coords;
+      const dLat = (cLat - lat) * (Math.PI / 180);
+      const dLon = (cLon - lon) * (Math.PI / 180);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat * (Math.PI / 180)) * Math.cos(cLat * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const dist = 6371 * c;
+
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestCity = cityName;
+      }
+    }
+
+    if (nearestCity) {
+      const citySelect = document.getElementById('global-city-select');
+      if (citySelect) {
+        const match = Array.from(citySelect.options).find(
+          opt => opt.value && opt.value.toLowerCase() === nearestCity.toLowerCase()
+        );
+        if (match) return match.value;
+      }
+      return nearestCity.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+    return null;
+  },
 
  setupMapLocationButtons() {
   document.querySelectorAll('[data-use-current-location]').forEach((button) => {
@@ -372,44 +552,50 @@ async searchCity() {
 },
 
 
-changeCity(city) {
-
+  changeCity(city, coordinates = null) {
     this.selectedCity = city;
+    this.selectedCoordinates = coordinates;
 
-    localStorage.setItem(
-        'wm_selected_city',
-        city
-    );
+    localStorage.setItem('wm_selected_city', city);
+    if (coordinates) {
+      localStorage.setItem('wm_selected_coordinates', JSON.stringify(coordinates));
+    } else {
+      localStorage.removeItem('wm_selected_coordinates');
+    }
 
     const citySelect = document.getElementById('global-city-select');
     if (citySelect) {
-        const matchingOption = Array.from(citySelect.options).find(
-            option => option.value.toLowerCase() === city.toLowerCase()
-        );
-        if (matchingOption) {
-            citySelect.value = matchingOption.value;
+      const matchingOption = Array.from(citySelect.options).find(
+        option => option.value && option.value !== 'CURRENT_LOCATION' && option.value.toLowerCase() === city.toLowerCase()
+      );
+      if (matchingOption) {
+        citySelect.value = matchingOption.value;
+      } else {
+        const currentLocOpt = Array.from(citySelect.options).find(opt => opt.value === 'CURRENT_LOCATION');
+        const newOpt = new Option(city, city);
+        if (currentLocOpt && currentLocOpt.nextSibling) {
+          citySelect.insertBefore(newOpt, currentLocOpt.nextSibling);
         } else {
-            citySelect.prepend(new Option(city, city));
-            citySelect.value = city;
+          citySelect.prepend(newOpt);
         }
+        citySelect.value = city;
+      }
     }
 
     window.showToast(
-        `Monitoring Region Switched: ${city}`,
-        'info'
+      `Monitoring Region Switched: ${city}`,
+      'info'
     );
 
     window.dispatchEvent(
-        new CustomEvent(
-            'wm:city_changed',
-            {
-                detail: {
-                    city: city
-                }
-            }
-        )
+      new CustomEvent('wm:city_changed', {
+        detail: {
+          city: city,
+          coordinates: coordinates
+        }
+      })
     );
-},
+  },
 
   setupLogoutModal() {
     const logoutBtn = document.getElementById('logout-trigger-btn');

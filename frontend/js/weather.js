@@ -23,7 +23,12 @@ const WeatherApp = {
   async loadWeather() {
     try {
       const city = App.selectedCity || 'Chhatrapati Sambhajinagar';
-      const res = await API.get(`/api/weather?city=${encodeURIComponent(city)}`);
+      let url = `/api/weather?city=${encodeURIComponent(city)}`;
+      const coords = App.selectedCoordinates || (localStorage.getItem('wm_selected_coordinates') ? JSON.parse(localStorage.getItem('wm_selected_coordinates')) : null);
+      if (coords && Number.isFinite(coords.latitude) && Number.isFinite(coords.longitude)) {
+        url += `&lat=${coords.latitude}&lon=${coords.longitude}`;
+      }
+      const res = await API.get(url);
       if (res && res.success && res.data) {
         this.renderWeatherOverview(res.data);
       }
@@ -77,7 +82,12 @@ const WeatherApp = {
   async loadNowcast() {
     try {
       const city = App.selectedCity || 'Chhatrapati Sambhajinagar';
-      const res = await API.get(`/api/weather/nowcast?city=${encodeURIComponent(city)}`);
+      let url = `/api/weather/nowcast?city=${encodeURIComponent(city)}`;
+      const coords = App.selectedCoordinates || (localStorage.getItem('wm_selected_coordinates') ? JSON.parse(localStorage.getItem('wm_selected_coordinates')) : null);
+      if (coords && Number.isFinite(coords.latitude) && Number.isFinite(coords.longitude)) {
+        url += `&lat=${coords.latitude}&lon=${coords.longitude}`;
+      }
+      const res = await API.get(url);
       if (res && res.success) {
         this.renderHourlyCards(res.hourly);
         this.renderRiskCard(res.riskAssessment);
